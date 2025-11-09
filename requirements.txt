@@ -1,0 +1,13 @@
+Flask
+Flask-SQLAlchemy
+python-dotenv
+bcrypt
+psycopg2-binary
+Flask-WTF
+Flask-Limiter
+dotenv
+redis
+Pill
+bleach
+Flask-Session
+gunicorn

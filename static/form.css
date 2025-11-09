@@ -1,0 +1,317 @@
+/* Общий стиль */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+body {
+    background: #d9effc; /* более голубой фон */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 15px;
+}
+
+/* Toast Notifications */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.toast {
+    background: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 300px;
+    animation: slideIn 0.3s ease-out;
+}
+.toast.error {
+    border-left: 4px solid #f44336;
+}
+.toast.success {
+    border-left: 4px solid #4caf50;
+}
+.toast.warning {
+    border-left: 4px solid #ff9800;
+}
+.toast-icon {
+    font-size: 20px;
+}
+.toast-message {
+    flex: 1;
+    color: #333;
+    font-size: 14px;
+}
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.char-counter {
+    font-size: 0.75em;
+    color: #666;
+    margin-top: 4px;
+    margin-bottom: 8px;
+    display: block;
+}
+.char-counter.warning {
+    color: #ff9800;
+}
+.char-counter.limit {
+    color: #f44336;
+    font-weight: bold;
+}
+
+/* Input with button container */
+.input-with-button {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.input-with-button input {
+    flex: 1;
+    width: auto !important;
+    margin: 0 !important;
+}
+.add-btn {
+    padding: 8px 12px;
+    background: #0284c7;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background 0.2s;
+    margin: 0 !important;
+    flex-shrink: 0;
+    min-width: auto;
+    width: auto !important;
+}
+.add-btn:hover {
+    background: #0277bd;
+}
+.add-btn:active {
+    background: #015f99;
+}
+.add-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Chips container */
+.chips-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+    min-height: 20px;
+}
+.chip {
+    background: #0284c7;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 0.8em;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+.chip:hover {
+    background: #0277bd;
+    transform: scale(1.05);
+}
+.chip-remove {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+/* Helper text */
+.helper-text {
+    font-size: 0.85em;
+    color: #666;
+    margin-top: 4px;
+    display: block;
+}
+.helper-text.error {
+    color: #f44336;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .add-btn {
+        padding: 8px 10px;
+        font-size: 10px;
+    }
+    .toast-container {
+        right: 10px;
+        left: 10px;
+        top: 10px;
+    }
+    .toast {
+        min-width: auto;
+        width: 100%;
+    }
+}
+/* Карточка формы */
+.form-container {
+    background: #fff;
+    padding: 22px 20px;
+    border-radius: 18px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 500px; /* ещё меньше */
+    text-align: center;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Заголовок */
+.form-container h1, .form-container h2 {
+    margin-bottom: 18px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #026aa7;
+}
+
+/* Поля */
+input, select {
+    width: 100%;
+    padding: 10px 12px;
+    margin: 6px 0 12px 0;
+    border: 1px solid #d0d7de;
+    border-radius: 10px;
+    font-size: 14px;
+    transition: all 0.2s;
+    background: #fafafa;
+}
+
+input:focus, select:focus {
+    border-color: #0284c7;
+    background: #fff;
+    outline: none;
+    box-shadow: 0 0 6px rgba(2, 132, 199, 0.25);
+}
+
+/* Кнопка */
+button, input[type="submit"] {
+    width: 100%;
+    background: linear-gradient(135deg, #0284c7, #0277bd);
+    color: #fff;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 10px;
+    padding: 12px;
+    margin-top: 5px;
+    transition: 0.2s;
+    font-size: 14px;
+}
+
+button:hover, input[type="submit"]:hover {
+    background: linear-gradient(135deg, #0277bd, #015f99);
+}
+
+/* Flash сообщения */
+.flash {
+    padding: 8px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    font-size: 13px;
+}
+.flash.error { background: #f8d7da; color: #721c24; }
+.flash.success { background: #d4edda; color: #155724; }
+
+/* Чипсы */
+#hobbyChips span,
+#favSubjChips span {
+    display: inline-block;
+    background: #e0f4ff;
+    color: #026aa7;
+    padding: 6px 12px;
+    border-radius: 50px;
+    margin: 4px 4px 0 0;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+#hobbyChips span:hover,
+#favSubjChips span:hover {
+    background: #b3e5fc;
+}
+
+/* Loading */
+#loading-screen {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: #d9effc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+.loader {
+    border: 5px solid #cfd8dc;
+    border-top: 5px solid #0288d1;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+/* Анимации */
+@keyframes spin { 100% { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* 📱 Полная адаптация под телефон */
+/* Полный мобильный режим */
+@media (max-width: 350px) {
+    html, body {
+        height: 90%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* убираем прокрутку */
+    }
+     body {
+        background: #cae8fa;
+        display: flex;
+        justify-content: center;
+        align-items: stretch; /* форма растянута */
+    }
+    .form-container {
+        width: 100%;
+        max-width: 100%;
+        height: 100vh;       /* форма на весь экран */
+        margin: 0;
+        border-radius: 0;    /* убираем углы */
+        padding: 25px 18px;
+        box-shadow: none;    /* убираем тень — будет как отдельное приложение */
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* форма по центру экрана */
+    }
+    input, select, button {
+        font-size: 16px;
+        padding: 13px 14px;
+    }
+}

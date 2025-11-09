@@ -1,0 +1,64 @@
+{% extends "navbar.html" %}
+
+{% block title %}Notifications - NOOR{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='notifications.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container" data-user-gender="{{ current_user.sex|lower if current_user else 'male' }}">
+    <div class="header">
+        <h1>Notifications</h1>
+        <div class="actions">
+            <button class="btn-mark-all" id="markAllBtn">Mark all read</button>
+        </div>
+    </div>
+
+    <div class="notifications" id="notificationsList">
+        <!-- Notifications will load here -->
+    </div>
+
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="empty" id="emptyState" style="display: none;">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            <line x1="1" y1="1" x2="23" y2="23"/>
+        </svg>
+        <h2>No notifications</h2>
+        <p>You're all caught up!</p>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div class="modal-overlay" id="confirmModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18"/>
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                    <line x1="10" y1="11" x2="10" y2="17"/>
+                    <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+            </div>
+            <h2 class="modal-title">Delete All Notifications?</h2>
+            <p class="modal-message">This will permanently delete all your notifications. This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button class="modal-btn modal-cancel" id="modalCancel">Cancel</button>
+                <button class="modal-btn modal-confirm" id="modalConfirm">Delete All</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+</script>
+<script src="{{ url_for('static', filename='notifications.js') }}"></script>
+{% endblock %}

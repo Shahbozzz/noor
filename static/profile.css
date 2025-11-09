@@ -1,0 +1,867 @@
+/* PROFESSIONAL PROFILE DESIGN - COMPLETE FIX */
+
+:root {
+    --blue: #4A90E2;
+    --blue-light: #00BFFF;
+    --pink: #FF4F9A;
+    --pink-light: #FF6EC7;
+}
+
+/* Base Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    height: 100%;
+    width: 100%;
+    overflow-x: hidden;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #333;
+    min-height: 100vh;
+    overflow-x: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+}
+
+/* Force remove all parent padding/margins */
+main, .content, #content {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Gender-specific colors */
+[data-gender="male"] {
+    --primary: #4A90E2;
+    --gradient: linear-gradient(135deg, #4A90E2 0%, #00BFFF 100%);
+    --bg: #9cd4f4;
+}
+
+[data-gender="female"] {
+    --primary: #FF4F9A;
+    --gradient: linear-gradient(135deg, #FF4F9A 0%, #FF6EC7 100%);
+    --bg: #FFB6C1;
+}
+
+/* Override any parent container constraints */
+.profile-wrapper {
+    max-width: none !important;
+}
+
+.profile-wrapper * {
+    box-sizing: border-box;
+}
+
+/* Force remove any wrapper/container padding that might exist from navbar */
+body > main,
+body > .container,
+body > .wrapper {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* CRITICAL: Override navbar.css main-content padding for profile page */
+.main-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+}
+
+/* Main Wrapper - FULL EDGE-TO-EDGE BACKGROUND */
+.profile-wrapper {
+    min-height: 100vh;
+    width: 100%;
+    max-width: 100%;
+    background: var(--bg);
+    position: relative;
+    overflow-x: hidden !important;
+    padding-bottom: 0;
+    margin: 0 !important;
+    padding-top: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+
+}
+.mobile-logout-btn {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 48px;
+        height: 48px;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border-radius: 50%;
+        display: none; /* Hidden by default */
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+.mobile-logout-btn svg {
+    stroke: white;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.mobile-logout-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.mobile-logout-btn:active {
+    transform: scale(0.95);
+}
+
+.profile-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0;
+    position: relative;
+    width: 100%;
+}
+
+/* Header Card */
+.profile-header-card {
+    background: var(--gradient);
+    border-radius: 0 0 24px 24px;
+    padding: 60px 20px;
+    padding-top: 100px;
+    margin: 0 0 0 0;
+    color: white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    width: 100%;
+    max-width: none;
+}
+
+.header-content {
+    max-width: 860px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    position: relative;
+    justify-content: flex-start;
+    padding: 0 20px;
+}
+
+/* Profile Image */
+.profile-image-wrapper {
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-image,
+.profile-image-placeholder {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: white;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    object-fit: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.profile-image-placeholder {
+    color: var(--primary);
+}
+
+.photo-edit-btn {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 36px;
+    height: 36px;
+    background: white;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    font-size: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.photo-edit-btn:hover {
+    transform: scale(1.1);
+    border-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Header Info */
+.header-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.student-name {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.student-academic {
+    font-size: 18px;
+    opacity: 0.95;
+    font-weight: 500;
+}
+
+.friend-action-btn {
+    margin-top: 16px;
+    padding: 10px 24px;
+    background: rgba(255, 255, 255, 0.25);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    border-radius: 24px;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.friend-action-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Sections Container */
+.sections-container {
+    max-width: 860px;
+    margin: 20px auto 0 auto;
+    padding: 0 20px 20px 20px;
+}
+
+/* Info Cards - PURE WHITE WITH SOFT SHADOWS */
+.info-card {
+    background: white;
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.info-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* Card Header */
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f5f5f5;
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0;
+}
+
+.edit-section-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    opacity: 0.7;
+}
+
+.edit-section-btn:hover {
+    opacity: 1;
+    background: #f5f5f5;
+    transform: scale(1.1);
+}
+
+/* Card Content */
+.card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.info-row {
+    display: flex;
+    gap: 8px;
+    line-height: 1.7;
+}
+
+.info-label {
+    font-weight: 600;
+    color: var(--primary);
+    flex-shrink: 0;
+    font-size: 15px;
+}
+
+.info-value {
+    color: var(--primary);
+    word-break: break-word;
+    font-size: 15px;
+}
+
+/* About Me Text */
+.about-text {
+    color: var(--primary);
+    font-size: 15px;
+    line-height: 1.7;
+    word-wrap: break-word;
+}
+
+/* Telegram Button */
+.telegram-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    background: var(--gradient);
+    color: white;
+    border: none;
+    border-radius: 24px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.telegram-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.no-contact {
+    color: #999;
+    font-style: italic;
+}
+
+/* Friends Grid */
+.friends-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.friend-item {
+    text-align: center;
+    padding: 16px 12px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    position: relative;
+    transition: all 0.2s;
+    text-decoration: none;
+    color: #333;
+}
+
+.friend-item:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.friend-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    overflow: hidden;
+    background: #dee2e6;
+}
+
+.friend-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.friend-avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+}
+
+.friend-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+    word-break: break-word;
+}
+
+.remove-friend-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    background: white;
+    border: 1px solid #dc3545;
+    color: #dc3545;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.friend-item:hover .remove-friend-btn {
+    opacity: 1;
+}
+
+.friends-loading {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e0e0e0;
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.friends-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.friends-count {
+    font-size: 15px;
+    color: #6c757d;
+    font-weight: 400;
+}
+
+/* Modals */
+.edit-modal,
+.confirm-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.edit-modal.active,
+.confirm-modal.active {
+    display: flex;
+}
+
+.modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    position: relative;
+    background: white;
+    border-radius: 16px;
+    max-width: 500px;
+    width: 100%;
+    padding: 28px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-small {
+    max-width: 400px;
+    text-align: center;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.modal-close:hover {
+    background: #f5f5f5;
+    color: #333;
+}
+
+.modal-small h3 {
+    margin: 0 0 12px;
+    font-size: 20px;
+    color: #333;
+}
+
+.modal-small p {
+    margin: 0 0 24px;
+    color: #666;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+/* Form Styles */
+.modal-form {
+    padding: 0;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-group small {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #666;
+}
+
+/* Modal Buttons */
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.btn-secondary,
+.btn-primary,
+.btn-danger {
+    flex: 1;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.btn-secondary {
+    background: white;
+    border: 2px solid var(--primary);
+    color: var(--primary);
+}
+
+.btn-secondary:hover {
+    background: #f8f9fa;
+}
+
+.btn-primary,
+.btn-danger {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover,
+.btn-danger:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Toast Notifications */
+#toastContainer {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.toast {
+    background: white;
+    padding: 14px 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: toastSlideIn 0.3s ease;
+    min-width: 250px;
+}
+
+@keyframes toastSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.toast.success {
+    border-left: 4px solid #28a745;
+}
+
+.toast.error {
+    border-left: 4px solid #dc3545;
+}
+
+.toast.info {
+    border-left: 4px solid var(--primary);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    body {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .profile-wrapper {
+        width: 100vw !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        min-height: 100vh;
+    }
+    .mobile-logout-btn {
+        display: flex;
+    }
+
+    .profile-container {
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        max-width: none;
+    }
+
+    .profile-header-card {
+        border-radius: 0 0 20px 20px;
+        padding: 40px 20px;
+        margin: 0 !important;
+    }
+
+    .header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 16px;
+        justify-content: center;
+        align-items: center;
+        padding: 0 16px;
+    }
+
+    .profile-image,
+    .profile-image-placeholder {
+        width: 100px;
+        height: 100px;
+    }
+
+    .header-info {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .student-name {
+        font-size: 22px;
+        text-align: center;
+    }
+
+    .student-academic {
+        font-size: 14px;
+        text-align: center;
+    }
+
+    .friend-action-btn {
+        margin-top: 12px;
+    }
+
+    .sections-container {
+        padding: 0 16px 20px 16px;
+        width: 100%;
+        max-width: none;
+    }
+
+    .info-card {
+        padding: 20px 16px;
+        margin-bottom: 16px;
+        border-radius: 14px;
+    }
+
+    .section-title {
+        font-size: 16px;
+    }
+
+    .info-label,
+    .info-value {
+        font-size: 13px;
+    }
+
+    .about-text {
+        font-size: 13px;
+    }
+
+    .friends-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 12px;
+    }
+
+    .friend-avatar {
+        width: 50px;
+        height: 50px;
+    }
+
+    .friend-name {
+        font-size: 12px;
+    }
+
+    .modal-content {
+        padding: 24px 20px;
+        margin: 0 12px;
+    }
+
+    .modal-header h3 {
+        font-size: 18px;
+    }
+
+    #toastContainer {
+        bottom: 16px;
+        right: 16px;
+        left: 16px;
+    }
+
+    .toast {
+        min-width: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .student-name {
+        font-size: 20px;
+    }
+
+    .info-card {
+        padding: 16px 14px;
+    }
+
+    .card-header {
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+    }
+
+    .friends-grid {
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    }
+     .mobile-logout-btn {
+            top: 15px;
+            right: 15px;
+            width: 44px;
+            height: 44px;
+        }
+
+    .mobile-logout-btn svg {
+        width: 22px;
+        height: 22px;
+    }
+}

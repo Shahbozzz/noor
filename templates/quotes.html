@@ -1,0 +1,177 @@
+{% extends 'navbar.html' %}
+
+{% block title %}Student Voice - NOOR{% endblock %}
+{% block extra_head %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='quotes.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="quotes-container" data-user-gender="{{ current_user.sex|lower if current_user else 'male' }}">
+    <!-- Header -->
+    <div class="quotes-header">
+        <h1>Student Voice</h1>
+
+        <!-- Faculty Tabs -->
+        <div class="faculty-tabs">
+            <button class="faculty-tab active" data-faculty="SOCIE">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="12" r="4"/>
+                    <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/>
+                    <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/>
+                    <line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/>
+                    <line x1="14.83" y1="9.17" x2="18.36" y2="5.64"/>
+                    <line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/>
+                </svg>
+                SOCIE
+            </button>
+            <button class="faculty-tab" data-faculty="SBL">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <polyline points="7.5 4.21 12 6.81 16.5 4.21"/>
+                    <polyline points="7.5 19.79 7.5 14.6 3 12"/>
+                    <polyline points="21 12 16.5 14.6 16.5 19.79"/>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                    <line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+                SBL
+            </button>
+        </div>
+
+        <!-- Sort Buttons (filter within faculty) -->
+        <div class="sort-buttons">
+            <button class="sort-btn active" data-sort="most_liked">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+                Most Liked
+            </button>
+            <button class="sort-btn" data-sort="random">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+                </svg>
+                Random
+            </button>
+            <button class="sort-btn" data-sort="my_quote">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                My Quote
+            </button>
+        </div>
+    </div>
+
+    <!-- Posts Feed -->
+    <div class="posts-feed" id="postsFeed">
+        <!-- Posts will be loaded here by JavaScript -->
+    </div>
+
+    <!-- Loading Indicator -->
+    <div class="loading-indicator" id="loadingIndicator" style="display: none;">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- Rate Limit Warning -->
+    <div class="rate-limit-warning" id="rateLimitWarning" style="display: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span id="rateLimitMessage"></span>
+    </div>
+
+    <!-- Bottom Composer -->
+    <div class="composer" id="composer">
+        <div class="composer-input-wrapper">
+            <textarea
+                id="postInput"
+                class="composer-input"
+                placeholder="Share your thoughts..."
+                maxlength="100"
+                rows="1"
+            ></textarea>
+            <div class="composer-footer">
+                <span class="char-counter" id="charCounter">0/100</span>
+                <button class="send-btn" id="sendBtn" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="edit-modal" id="editModal">
+        <div class="modal-overlay" id="modalOverlay"></div>
+        <div class="modal-content">
+            <h2>Edit Your Quote</h2>
+            <textarea
+                id="editInput"
+                class="edit-textarea"
+                maxlength="100"
+                rows="4"
+            ></textarea>
+            <div class="modal-footer">
+                <span class="edit-char-counter" id="editCharCounter">0/100</span>
+                <div class="modal-buttons">
+                    <button class="modal-btn cancel-btn" id="cancelEditBtn">Cancel</button>
+                    <button class="modal-btn save-btn" id="saveEditBtn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gender Cache Script - Same as Home Page -->
+<script>
+    // Version control - change this to force cache refresh
+    const GENDER_CACHE_VERSION = '2.0';
+
+    // Get the actual gender from server
+    const serverGender = "{{ current_user.sex|lower if current_user else 'male' }}";
+    const serverUserId = "{{ current_user.user_id if current_user else '' }}";
+
+    // Get cached data
+    const cacheVersion = localStorage.getItem('genderCacheVersion');
+    const cachedGender = localStorage.getItem('userGender');
+    const cachedUserId = localStorage.getItem('userId');
+
+    const body = document.body;
+
+    // Clear cache if:
+    // 1. Version changed (code update)
+    // 2. User changed (different login)
+    // 3. Cached gender doesn't match server (wrong data)
+    if (cacheVersion !== GENDER_CACHE_VERSION ||
+        cachedUserId !== serverUserId ||
+        cachedGender !== serverGender) {
+
+        // Clear everything and refresh
+        localStorage.removeItem('userGender');
+        localStorage.removeItem('userId');
+        localStorage.setItem('genderCacheVersion', GENDER_CACHE_VERSION);
+
+        // Save fresh data
+        localStorage.setItem('userGender', serverGender);
+        localStorage.setItem('userId', serverUserId);
+    }
+
+    // Apply gender class to body (always use server data to be safe)
+    body.className = body.className.replace(/user-(male|female)/g, '').trim();
+    body.classList.add('user-' + serverGender);
+
+    console.log('🎨 Gender applied:', serverGender);
+    console.log('📄 Body class:', body.className);
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='quotes.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,286 @@
+/* Reset */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Gender-Based Color Variables */
+body[data-user-gender="male"] {
+    --primary-color: #1a73e8;
+    --primary-light: #4A90E2;
+    --primary-lighter: #d2e7ff;
+    --primary-dark: #3074cf;
+    --active-bg: #d2e7ff;
+    --active-color: #3074cf;
+    --hover-bg: #f1f3f4;
+}
+
+body[data-user-gender="female"] {
+    --primary-color: #FF4F9A;
+    --primary-light: #FF6EC7;
+    --primary-lighter: #ffe0f0;
+    --primary-dark: #e6347d;
+    --active-bg: #ffe0f0;
+    --active-color: #e6347d;
+    --hover-bg: #fff5fa;
+}
+
+/* Default (fallback to male colors) */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #f0f2f5;
+    --primary-color: #1a73e8;
+    --primary-light: #4A90E2;
+    --primary-lighter: #d2e7ff;
+    --primary-dark: #3074cf;
+    --active-bg: #d2e7ff;
+    --active-color: #3074cf;
+    --hover-bg: #f1f3f4;
+}
+
+/* ==================== DESKTOP NAVBAR ==================== */
+.navbar-desktop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    z-index: 1000;
+    display: none;
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 65px;
+}
+
+.nav-brand h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--primary-color);
+    letter-spacing: 0.5px;
+}
+
+.nav-links {
+    display: flex;
+    list-style: none;
+    gap: 8px;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    text-decoration: none;
+    color: #5f6368;
+    border-radius: 18px;
+    font-weight: 500;
+    font-size: 15px;
+    transition: all 0.2s ease;
+}
+
+.nav-link svg {
+    stroke-width: 2;
+}
+
+.nav-link:hover {
+    background-color: var(--hover-bg);
+}
+
+.nav-link.active {
+    background-color: var(--active-bg);
+    color: var(--active-color);
+}
+
+/* Logout Button */
+.nav-logout {
+    margin-left: 12px;
+}
+
+.logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    text-decoration: none;
+    color: #ffffff;
+    background-color: var(--primary-dark);
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.logout-btn svg {
+    stroke-width: 2;
+}
+
+.logout-btn:hover {
+    background-color: #d33426;
+}
+
+/* ==================== MOBILE NAVBAR ==================== */
+.navbar-mobile {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    z-index: 1000;
+    display: block;
+    padding: 0;
+    border-radius: 24px;
+}
+
+.nav-mobile-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 8px 30px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.nav-mobile-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: #5f6368;
+    padding: 10px;
+    border-radius: 12px;
+    min-width: 48px;
+    min-height: 48px;
+    transition: all 0.2s ease;
+}
+
+.nav-mobile-item svg {
+    stroke-width: 2;
+}
+
+.nav-mobile-item.active {
+    color: var(--primary-color);
+}
+
+/* Profile Button Mobile */
+.nav-mobile-profile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    background: var(--primary-lighter);
+    color: var(--primary-color);
+    padding: 12px 22px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 15px;
+    min-height: 48px;
+    transition: all 0.2s ease;
+}
+
+.nav-mobile-profile svg {
+    stroke-width: 2.5;
+}
+
+.nav-mobile-profile.active {
+    background: var(--primary-color);
+    color: #ffffff;
+}
+
+/* Notification Badge Styles */
+
+/* Desktop badge */
+.nav-link-wrapper {
+    position: relative;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #ff4444;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+
+/* Mobile badge */
+.nav-mobile-item {
+    position: relative;
+}
+
+.notification-badge-mobile {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #ff4444;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    min-width: 14px;
+    height: 14px;
+    border-radius: 7px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+
+/* ==================== MAIN CONTENT ==================== */
+.main-content {
+    padding: 20px;
+    padding-bottom: 100px;
+    min-height: 100vh;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (min-width: 768px) {
+    .navbar-desktop {
+        display: block;
+    }
+
+    .navbar-mobile {
+        display: none;
+    }
+
+    body {
+        padding-top: 65px;
+    }
+
+    .main-content {
+        padding: 32px;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding-bottom: 32px;
+    }
+}
+
+@media (min-width: 480px) and (max-width: 767px) {
+    .nav-mobile-container {
+        max-width: 500px;
+        margin: 0 auto;
+        padding: 16px 28px;
+    }
+}

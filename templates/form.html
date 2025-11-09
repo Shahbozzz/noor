@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Form</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='form.css') }}">
+    <script src="{{ url_for('static', filename='loading.js') }}" defer></script>
+    <style>
+        /* Custom Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            animation: slideIn 0.3s ease-out;
+        }
+        .toast.error {
+            border-left: 4px solid #f44336;
+        }
+        .toast.success {
+            border-left: 4px solid #4caf50;
+        }
+        .toast.warning {
+            border-left: 4px solid #ff9800;
+        }
+        .toast-icon {
+            font-size: 20px;
+        }
+        .toast-message {
+            flex: 1;
+            color: #333;
+            font-size: 14px;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Character counter styles */
+        .char-counter {
+            font-size: 0.75em;
+            color: #666;
+            margin-top: 4px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .char-counter.warning {
+            color: #ff9800;
+        }
+        .char-counter.limit {
+            color: #f44336;
+            font-weight: bold;
+        }
+
+        /* Input with button container */
+        .input-with-button {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .input-with-button input {
+            flex: 1;
+            width: auto !important;
+            margin: 0 !important;
+        }
+        .add-btn {
+            padding: 8px 12px;
+            background: #0284c7;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: background 0.2s;
+            margin: 0 !important;
+            flex-shrink: 0;
+            min-width: auto;
+            width: auto;
+        }
+        .add-btn:hover {
+            background: #0277bd;
+        }
+        .add-btn:active {
+            background: #015f99;
+        }
+        .add-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Chips container */
+        .chips-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+            min-height: 20px;
+        }
+        .chip {
+            background: #0284c7;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+        .chip:hover {
+            background: #0277bd;
+            transform: scale(1.05);
+        }
+        .chip-remove {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        /* Helper text */
+        .helper-text {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 4px;
+            display: block;
+        }
+        .helper-text.error {
+            color: #f44336;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .add-btn {
+                padding: 8px 10px;
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-screen">
+        <div class="loader"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="form-container">
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+          <h2>Student Survey</h2>
+
+          <form method="POST" action="{{ url_for('forms.submit_form') }}" enctype="multipart/form-data" onsubmit="return validateForm()">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <label>Your name</label>
+            <input type="text" id="name" name="name" required maxlength="20">
+            <span class="char-counter" id="nameCounter">0/20</span>
+
+            <label>Your surname</label>
+            <input type="text" id="surname" name="surname" required maxlength="20">
+            <span class="char-counter" id="surnameCounter">0/20</span>
+
+            <label>Birthday (optional)</label>
+            <input type="text" id="birthday" name="birthday" placeholder="YYYY/MM/DD (e.g., 2006/04/21)" maxlength="10">
+            <span class="helper-text">Format: YYYY/MM/DD • Year must be between 2000-2009</span>
+            <span class="helper-text error" id="birthdayError" style="display: none;"></span>
+
+            <label>Photo</label>
+            <input type="file" name="photo" id="photoInput" accept="image/*">
+            <span class="helper-text">Maximum file size: 5 MB • Supported: JPG, PNG, WebP, GIF</span>
+
+            <label>Level</label>
+            <select name="level" required>
+              <option value="">--Select--</option>
+              <option>Fresh</option>
+              <option>Sophomore</option>
+              <option>Junior</option>
+              <option>Senior</option>
+            </select>
+
+            <label>Faculty</label>
+            <select id="faculty" name="faculty" required>
+              <option value="">-- Select faculty --</option>
+              <option value="ICE">SOCIE (ICE)</option>
+              <option value="CSE">SOCIE (CSE)</option>
+              <option value="SBL_B">SBL (Business)</option>
+              <option value="SBL_L">SBL (Logistics)</option>
+            </select>
+
+            <label>Sex</label>
+            <select id="sex" name="sex" onchange="updateRelationship()" required>
+              <option value="">-- Select sex --</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+
+            <label>Relationship status</label>
+            <select id="relationship" name="relationship" required></select>
+
+            <label>Hobbies (up to 3)</label>
+            <div class="input-with-button">
+                <input type="text" id="hobbyInput" placeholder='Scrolling reels, Gaming, Sports...' maxlength="15">
+                <button type="button" class="add-btn" id="addHobbyBtn" onclick="addHobby()">Add</button>
+            </div>
+            <span class="char-counter" id="hobbyCounter">0/15</span>
+            <div class="chips-container" id="hobbyChips"></div>
+            <input type="hidden" name="hobbies" id="hobbiesField">
+
+            <div id="facultyFields">
+              <label>Star Professor (required)</label>
+              <input type="text" id="professor" name="professor" placeholder='Lee Dongwoon' maxlength="35" required>
+              <span class="char-counter" id="professorCounter">0/35</span>
+
+              <label>Favorite subjects (up to 2)</label>
+              <div class="input-with-button">
+                  <input type="text" id="favSubjInput" placeholder='Marketing Management, Programming...' maxlength="20">
+                  <button type="button" class="add-btn" id="addSubjectBtn" onclick="addSubject()">Add</button>
+              </div>
+              <span class="char-counter" id="subjectCounter">0/20</span>
+              <div class="chips-container" id="favSubjChips"></div>
+              <input type="hidden" name="favorite_subjects" id="favSubjectsField" required>
+            </div>
+
+            <label>Nickname of Telegram (optional)</label>
+            <input type="text" id="telegram" name="telegram" maxlength="30" placeholder="@unknown_dude">
+            <span class="char-counter" id="telegramCounter">0/30</span>
+
+            <button type="submit">Submit</button>
+          </form>
+
+    </div>
+
+
+  <script>
+    const relationships = {
+      male: ["In a relationship","Crushing on someone","Single (Lone wolf 🐺)","It's complicated"],
+      female: ["Taken (happily in love 💕)","Secretly crushing","Single (Independent queen 👑)","It's complicated"]
+    };
+
+    let selectedHobbies = [];
+    let selectedFavSubjects = [];
+
+    // Toast notification system
+    function showToast(message, type = 'error') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+
+      const icons = {
+        error: '❌',
+        success: '✅',
+        warning: '⚠️'
+      };
+
+      toast.innerHTML = `
+        <span class="toast-icon">${icons[type]}</span>
+        <span class="toast-message">${message}</span>
+      `;
+
+      container.appendChild(toast);
+
+      // Auto remove after 3 seconds
+      setTimeout(() => {
+        toast.style.animation = 'slideIn 0.3s ease-out reverse';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+// Simple character counter with hard limit enforcement
+    function setupCharCounter(inputId, counterId, maxLength) {
+      const input = document.getElementById(inputId);
+      const counter = document.getElementById(counterId);
+
+      input.addEventListener('input', function() {
+        // Hard limit: prevent exceeding maxLength
+        if (this.value.length > maxLength) {
+          this.value = this.value.substring(0, maxLength);
+        }
+
+        const length = this.value.length;
+        counter.textContent = `${length}/${maxLength}`;
+
+        // Color coding
+        counter.classList.remove('warning', 'limit');
+        if (length >= maxLength) {
+          counter.classList.add('limit');
+        } else if (length >= maxLength * 0.8) {
+          counter.classList.add('warning');
+        }
+      });
+    }
+
+    // Initialize counters on page load
+    window.addEventListener('DOMContentLoaded', function() {
+      setupCharCounter('name', 'nameCounter', 20);
+      setupCharCounter('surname', 'surnameCounter', 20);
+      setupCharCounter('hobbyInput', 'hobbyCounter', 15);
+      setupCharCounter('professor', 'professorCounter', 35);
+      setupCharCounter('favSubjInput', 'subjectCounter', 20);
+      setupCharCounter('telegram', 'telegramCounter', 30);
+    });
+
+    // Photo file size validation - Real-time check
+    document.addEventListener('DOMContentLoaded', function() {
+      const photoInput = document.getElementById('photoInput');
+
+      if (photoInput) {
+        photoInput.addEventListener('change', function(e) {
+          const file = this.files[0];
+
+          if (!file) return;
+
+          const maxSize = 5 * 1024 * 1024; // 5 MB in bytes
+          const fileSize = file.size;
+          const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+
+          // Check file size
+          if (fileSize > maxSize) {
+            showToast(`Photo is too large (${fileSizeMB} MB)! Please upload an image smaller than 5 MB.`, 'error');
+            this.value = ''; // Clear the input
+            return;
+          }
+
+          // Check file type
+          const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+          if (!allowedTypes.includes(file.type)) {
+            showToast('Please upload a valid image (JPG, PNG, WebP, or GIF)', 'error');
+            this.value = ''; // Clear the input
+            return;
+          }
+
+          // Success feedback
+          showToast(`Photo selected: ${file.name} (${fileSizeMB} MB)`, 'success');
+        });
+      }
+    });
+
+    function sanitize(str) {
+      return str.replace(/[&<>"']/g, s => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        "\"":"&quot;",
+        "'":"&#x27;"
+      }[s]));
+    }
+
+    function renderChips(containerId, items, hiddenFieldId) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+
+      items.forEach(item => {
+        const chip = document.createElement("div");
+        chip.className = "chip";
+        chip.innerHTML = `${sanitize(item)} <span class="chip-remove">×</span>`;
+        chip.onclick = function() {
+          removeItem(items, item, containerId, hiddenFieldId);
+        };
+        container.appendChild(chip);
+      });
+
+      document.getElementById(hiddenFieldId).value = items.join(",");
+    }
+
+    function addItem(items, inputId, containerId, hiddenFieldId, maxItems) {
+      const input = document.getElementById(inputId);
+      const value = input.value.trim();
+
+      if (!value) {
+        showToast('Please enter a value!', 'warning');
+        return;
+      }
+
+      if (items.includes(value)) {
+        showToast('This item is already added!', 'warning');
+        return;
+      }
+
+      if (items.length >= maxItems) {
+        showToast(`You can only add up to ${maxItems} items!`, 'error');
+        return;
+      }
+
+      items.push(value);
+      renderChips(containerId, items, hiddenFieldId);
+      input.value = '';
+
+      // Reset counter to 0
+      const counterId = inputId.replace('Input', 'Counter');
+      const counter = document.getElementById(counterId);
+      if (counter) {
+        const maxLength = counter.textContent.split('/')[1];
+        counter.textContent = `0/${maxLength}`;
+        counter.classList.remove('warning', 'limit');
+      }
+
+      showToast('Item added successfully!', 'success');
+    }
+
+    function removeItem(items, value, containerId, hiddenFieldId) {
+      const index = items.indexOf(value);
+      if (index > -1) {
+        items.splice(index, 1);
+        renderChips(containerId, items, hiddenFieldId);
+        showToast('Item removed!', 'success');
+      }
+    }
+
+    function addHobby() {
+      addItem(selectedHobbies, 'hobbyInput', 'hobbyChips', 'hobbiesField', 3);
+    }
+
+    function addSubject() {
+      addItem(selectedFavSubjects, 'favSubjInput', 'favSubjChips', 'favSubjectsField', 2);
+    }
+
+    // Allow Enter key to add items
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('hobbyInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addHobby();
+        }
+      });
+
+      document.getElementById('favSubjInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addSubject();
+        }
+      });
+
+      // Hard limit enforcement for hobby input (15 chars)
+      document.getElementById('hobbyInput').addEventListener('input', function(e) {
+        if (this.value.length > 15) {
+          this.value = this.value.substring(0, 15);
+          const counter = document.getElementById('hobbyCounter');
+          counter.textContent = '15/15';
+          counter.classList.add('limit');
+        }
+      });
+
+      // Hard limit enforcement for subject input (20 chars)
+      document.getElementById('favSubjInput').addEventListener('input', function(e) {
+        if (this.value.length > 20) {
+          this.value = this.value.substring(0, 20);
+          const counter = document.getElementById('subjectCounter');
+          counter.textContent = '20/20';
+          counter.classList.add('limit');
+        }
+      });
+    });
+
+    function updateRelationship(){
+      const sex = document.getElementById("sex").value;
+      const rel = document.getElementById("relationship");
+      rel.innerHTML = "";
+      (relationships[sex]||[]).forEach(r=> rel.add(new Option(r,r)));
+    }
+
+    // Birthday validation with auto-formatting
+    const birthdayInput = document.getElementById("birthday");
+    const birthdayError = document.getElementById("birthdayError");
+
+    birthdayInput.addEventListener("input", function(e) {
+      let value = this.value.replace(/\D/g, ''); // Remove non-digits
+
+      // Auto-format with slashes
+      if (value.length >= 4) {
+        value = value.slice(0, 4) + '/' + value.slice(4);
+      }
+      if (value.length >= 7) {
+        value = value.slice(0, 7) + '/' + value.slice(7, 9);
+      }
+
+      this.value = value;
+      validateBirthdayField();
+    });
+
+    function validateBirthdayField() {
+      const value = birthdayInput.value.trim();
+
+      if (!value) {
+        birthdayError.style.display = "none";
+        return true;
+      }
+
+      // Check format
+      const formatRegex = /^\d{4}\/\d{2}\/\d{2}$/;
+      if (!formatRegex.test(value)) {
+        birthdayError.textContent = "❌ Format must be YYYY/MM/DD (e.g., 2006/04/21)";
+        birthdayError.style.display = "block";
+        return false;
+      }
+
+      // Parse date
+      const parts = value.split("/");
+      const year = parseInt(parts[0]);
+      const month = parseInt(parts[1]);
+      const day = parseInt(parts[2]);
+
+      // Check year range
+      if (year < 2000 || year > 2009) {
+        birthdayError.textContent = "❌ Birth year must be between 2000 and 2009";
+        birthdayError.style.display = "block";
+        return false;
+      }
+
+      // Validate actual date
+      const date = new Date(year, month - 1, day);
+      if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+        birthdayError.textContent = "❌ Invalid date. Please check day and month";
+        birthdayError.style.display = "block";
+        return false;
+      }
+
+      // Check not in future
+      if (date > new Date()) {
+        birthdayError.textContent = "❌ Birthday cannot be in the future";
+        birthdayError.style.display = "block";
+        return false;
+      }
+
+      birthdayError.style.display = "none";
+      return true;
+    }
+
+    function validateForm() {
+      // Check birthday validation first
+      if (!validateBirthdayField()) {
+        showToast('Please fix the birthday format!', 'error');
+        return false;
+      }
+
+      // Double-check photo size before submission
+      const photoInput = document.getElementById('photoInput');
+      if (photoInput && photoInput.files.length > 0) {
+        const file = photoInput.files[0];
+        const maxSize = 5 * 1024 * 1024; // 5 MB
+
+        if (file.size > maxSize) {
+          const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+          showToast(`Photo is too large (${fileSizeMB} MB)! Maximum size is 5 MB.`, 'error');
+          return false;
+        }
+      }
+
+      // Check all required text inputs
+      const name = document.getElementById('name').value.trim();
+      const surname = document.getElementById('surname').value.trim();
+
+      if (!name) {
+        showToast('Please enter your name!', 'error');
+        document.getElementById('name').focus();
+        return false;
+      }
+
+      if (!surname) {
+        showToast('Please enter your surname!', 'error');
+        document.getElementById('surname').focus();
+        return false;
+      }
+
+      // Check level select
+      const level = document.querySelector('select[name="level"]').value;
+      if (!level) {
+        showToast('Please select your level!', 'error');
+        return false;
+      }
+
+      // Check faculty select
+      const faculty = document.getElementById('faculty').value;
+      if (!faculty) {
+        showToast('Please select your faculty!', 'error');
+        return false;
+      }
+
+      // Check sex select
+      const sex = document.getElementById('sex').value;
+      if (!sex) {
+        showToast('Please select your sex!', 'error');
+        return false;
+      }
+
+      // Check relationship status
+      const relationship = document.getElementById('relationship').value;
+      if (!relationship) {
+        showToast('Please select your relationship status!', 'error');
+        return false;
+      }
+
+      // Check hobbies (at least 1 required)
+      const hobbies = document.getElementById('hobbiesField').value;
+      if (!hobbies || selectedHobbies.length === 0) {
+        showToast('Please add at least 1 hobby!', 'error');
+        return false;
+      }
+
+      // Check professor (required)
+      const professor = document.getElementById('professor').value.trim();
+      if (!professor) {
+        showToast('Please enter your star professor!', 'error');
+        document.getElementById('professor').focus();
+        return false;
+      }
+
+      // Check favorite subjects (at least 1 required)
+      const subjects = document.getElementById('favSubjectsField').value;
+      if (!subjects || selectedFavSubjects.length === 0) {
+        showToast('Please add at least 1 favorite subject!', 'error');
+        return false;
+      }
+
+      // All validation passed
+      return true;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+{% extends 'navbar.html' %}
+
+{% block title %}Home - NOOR{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}?v=2.0">
+{% endblock %}
+
+{% block content %}
+<!-- Gender is loaded from localStorage instantly, no database delay! -->
+<div class="home-container" id="homeContainer">
+    <!-- Filter Menu -->
+    <div class="filter-menu">
+        <div class="level-select">
+            <select id="levelFilter" class="level-dropdown">
+                <option value="all">All Levels</option>
+                <option value="Freshman">Freshman</option>
+                <option value="Sophomore">Sophomore</option>
+                <option value="Junior">Junior</option>
+                <option value="Senior">Senior</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <button class="filter-btn active" data-faculty="all">All Students</button>
+            <button class="filter-btn" data-faculty="SBL_B">SBL-B</button>
+            <button class="filter-btn" data-faculty="SBL_L">SBL-L</button>
+            <button class="filter-btn" data-faculty="ICE">SOCIE-ICE</button>
+            <button class="filter-btn" data-faculty="CSE">SOCIE-CSE</button>
+        </div>
+
+        <!-- Search Box -->
+        <div class="search-box">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input type="text" id="searchInput" class="search-input" placeholder="Search students...">
+            <button id="clearSearch" class="clear-search" style="display: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+    </div>
+    <!-- Students List -->
+    <div class="students-list" id="studentsGrid">
+        {% if students %}
+            {% for student in students %}
+            <a href="{{ url_for('pages.student_profile', user_id=student.user_id) }}" class="student-card-link">
+                <div class="student-card"
+                     data-faculty="{{ student.faculty }}"
+                     data-level="{{ student.level }}"
+                     data-student-gender="{{ student.sex|lower }}">
+                    <div class="student-photo">
+                        {% if student.photo_thumb_path %}
+                            <img src="/uploads/{{ student.photo_thumb_path.split('/')[-1] }}" alt="{{ student.name }}">
+                        {% elif student.photo_path %}
+                            <img src="/uploads/{{ student.photo_path.split('/')[-1] }}" alt="{{ student.name }}">
+                        {% else %}
+                            <div class="photo-placeholder">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="student-info">
+                        <div class="student-header">
+                            <div class="student-main-info">
+                                <h3 class="student-name">{{ student.name }} {{ student.surname }}</h3>
+                                <p class="student-faculty">{{ student.faculty }}, {{ student.level }}</p>
+                            </div>
+                            <button class="add-friend-btn" data-user-id="{{ student.user_id }}" onclick="event.preventDefault(); event.stopPropagation();">Add Friend</button>
+                        </div>
+                        {% if student.hobbies %}
+                        <p class="student-detail hobbies-detail">
+                            <strong>Hobbies:</strong>
+                            {% for hobby in student.hobbies.split(',') %}
+                            <span class="detail-value">{{ hobby }}</span>
+                            {% endfor %}
+                        </p>
+                        {% endif %}
+                        {% if student.favorite_subjects %}
+                        <p class="student-detail subjects-detail">
+                            <strong>Favourite Subjects:</strong>
+                            {% for subject in student.favorite_subjects.split(',') %}
+                            <span class="detail-value">{{ subject }}</span>
+                            {% endfor %}
+                        </p>
+                        {% endif %}
+                        <p class="student-detail relationship-detail">
+                            <strong>Relationship Status:</strong>
+                            <span class="detail-value">{{ student.relationship }}</span>
+                        </p>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        {% else %}
+            <div class="no-students">
+                <p>No students found. Be the first to join!</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Loading indicator will be added here by JavaScript -->
+</div>
+
+<!-- Improved Gender Cache Script with User Verification -->
+<script>
+    // Version control - change this to force cache refresh
+    const GENDER_CACHE_VERSION = '2.0';
+
+    // Get the actual gender from server
+    const serverGender = "{{ current_user.sex|lower if current_user else 'male' }}";
+    const serverUserId = "{{ current_user.user_id if current_user else '' }}";
+
+    // Get cached data
+    const cacheVersion = localStorage.getItem('genderCacheVersion');
+    const cachedGender = localStorage.getItem('userGender');
+    const cachedUserId = localStorage.getItem('userId');
+
+    const container = document.getElementById('homeContainer');
+    const body = document.body;
+
+    // Clear cache if:
+    // 1. Version changed (code update)
+    // 2. User changed (different login)
+    // 3. Cached gender doesn't match server (wrong data)
+    if (cacheVersion !== GENDER_CACHE_VERSION ||
+        cachedUserId !== serverUserId ||
+        cachedGender !== serverGender) {
+
+        // Clear everything and refresh
+        localStorage.removeItem('userGender');
+        localStorage.removeItem('userId');
+        localStorage.setItem('genderCacheVersion', GENDER_CACHE_VERSION);
+
+        // Save fresh data
+        localStorage.setItem('userGender', serverGender);
+        localStorage.setItem('userId', serverUserId);
+    }
+
+    // Apply gender (always use server data to be safe)
+    container.setAttribute('data-user-gender', serverGender);
+    body.className = body.className.replace(/user-(male|female)/g, '').trim();
+    body.classList.add('user-' + serverGender);
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='home.js') }}"></script>
+{% endblock %}

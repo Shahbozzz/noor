@@ -1,0 +1,31 @@
+.env
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Logs
+*.log
+app.log
+# Uploads (не загружать фото студентов в Git!)
+uploads/*
+!uploads/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Database
+*.db
+*.sqlite
+
+# OS files
+Thumbs.db

@@ -1,0 +1,329 @@
+{% extends 'navbar.html' %}
+
+{% block title %}{{ student.name }} {{ student.surname }} - NOOR{% endblock %}
+
+{% block extra_head %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">
+<style>
+    /* Friend Button Icon Styling */
+    .friend-action-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .friend-action-btn .btn-icon {
+        font-size: 16px;
+        line-height: 1;
+    }
+
+    .friend-action-btn .btn-text {
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    /* Loading state for friend button */
+    .friend-action-btn.loading {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    .friend-action-btn.loading .btn-icon::before {
+        content: '⌛';
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    /* Mobile Logout Button - Only visible on mobile devices */
+    .mobile-logout-btn {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 48px;
+        height: 48px;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border-radius: 50%;
+        display: none; /* Hidden by default */
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .mobile-logout-btn svg {
+        stroke: white;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    }
+
+    .mobile-logout-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.05);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .mobile-logout-btn:active {
+        transform: scale(0.95);
+    }
+
+    /* Show only on mobile devices (max-width: 768px) */
+    @media (max-width: 768px) {
+        .mobile-logout-btn {
+            display: flex;
+        }
+    }
+
+    /* Extra small devices */
+    @media (max-width: 480px) {
+        .mobile-logout-btn {
+            top: 15px;
+            right: 15px;
+            width: 44px;
+            height: 44px;
+        }
+
+        .mobile-logout-btn svg {
+            width: 22px;
+            height: 22px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-wrapper" data-gender="{{ student.sex|lower }}" style="margin: 0 !important; padding-left: 0 !important; padding-right: 0 !important; width: 100vw !important; position: relative; left: 50%; right: 50%; margin-left: -50vw !important; margin-right: -50vw !important;">
+    <!-- Profile Header Card -->
+    <div class="profile-container">
+        <!-- Mobile Logout Button (Only for own profile) -->
+        {% if is_own_profile %}
+        <a href="{{ url_for('auth.logout') }}" class="mobile-logout-btn" title="Logout">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+        </a>
+        {% endif %}
+
+        <div class="profile-header-card">
+            <div class="header-content">
+                <div class="profile-image-wrapper">
+                    {% if student.photo_path %}
+                        <img src="/uploads/{{ student.photo_path.split('/')[-1] }}" alt="{{ student.name }}" class="profile-image">
+                    {% else %}
+                        <div class="profile-image-placeholder">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <circle cx="12" cy="8" r="4"/>
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            </svg>
+                        </div>
+                    {% endif %}
+                    {% if is_own_profile %}
+                    <button class="photo-edit-btn" onclick="document.getElementById('photoUploadInput').click()">
+                        <span>📸</span>
+                    </button>
+                    <input type="file" id="photoUploadInput" accept="image/*" style="display: none;">
+                    {% endif %}
+                </div>
+                <div class="header-info">
+                    <h1 class="student-name">{{ student.name }} {{ student.surname }}</h1>
+                    <p class="student-academic">{{ student.faculty }} • {{ student.level }}</p>
+                    {% if not is_own_profile %}
+                    <button class="friend-action-btn" id="friendBtn" data-user-id="{{ student.user_id }}">
+                        <span class="btn-icon"></span>
+                        <span class="btn-text">Add Friend</span>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Sections Container -->
+        <div class="sections-container">
+
+            <!-- Personal Information -->
+            <div class="info-card" data-section="personal">
+                <div class="card-header">
+                    <h2 class="section-title">Personal Information</h2>
+                    {% if is_own_profile %}
+                    <button class="edit-section-btn" data-section="personal" type="button">✏️</button>
+                    {% endif %}
+                </div>
+                <div class="card-content">
+                    <!-- Hidden fields for name/surname (only for editing, not displayed) -->
+                    <span style="display:none;" data-field="name">{{ student.name }}</span>
+                    <span style="display:none;" data-field="surname">{{ student.surname }}</span>
+
+                    <div class="info-row">
+                        <span class="info-label">Age:</span>
+                        <span class="info-value" data-field="age">
+                            {% if student.birthday %}
+                                {% set birth_year = student.birthday.split('/')[0]|int %}
+                                {% set current_year = 2025 %}
+                                {{ current_year - birth_year }}
+                            {% else %}
+                                Not specified
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Relationship status:</span>
+                        <span class="info-value" data-field="relationship">{{ student.relationship or 'Not specified' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Interested in:</span>
+                        <span class="info-value" data-field="hobbies">{{ student.hobbies or 'Not specified' }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- About Me Section -->
+            {% if student.about_me or is_own_profile %}
+            <div class="info-card">
+                <div class="card-header">
+                    <h2 class="section-title">About Me</h2>
+                    {% if is_own_profile %}
+                    <button class="edit-section-btn" data-section="about" type="button">✏️</button>
+                    {% endif %}
+                </div>
+                <div class="card-content">
+                    <p class="about-text" data-field="about_me">{{ student.about_me or 'Not specified' }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Academic Information -->
+            <div class="info-card" data-section="academic">
+                <div class="card-header">
+                    <h2 class="section-title">Academic Information</h2>
+                    {% if is_own_profile %}
+                    <button class="edit-section-btn" data-section="academic" type="button">✏️</button>
+                    {% endif %}
+                </div>
+                <div class="card-content">
+                    <div class="info-row">
+                        <span class="info-label">Faculty:</span>
+                        <span class="info-value" data-field="faculty">{{ student.faculty }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Level:</span>
+                        <span class="info-value" data-field="level">{{ student.level }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Favorite subject:</span>
+                        <span class="info-value" data-field="favorite_subjects">{{ student.favorite_subjects or 'Not specified' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Favorite professor:</span>
+                        <span class="info-value" data-field="professor">{{ student.professor or 'Not specified' }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact -->
+            {% if student.telegram or is_own_profile %}
+            <div class="info-card" data-section="contact">
+                <div class="card-header">
+                    <h2 class="section-title">Contact</h2>
+                    {% if is_own_profile %}
+                    <button class="edit-section-btn" data-section="contact" type="button">✏️</button>
+                    {% endif %}
+                </div>
+                <div class="card-content">
+                    {% if student.telegram %}
+                    <button class="telegram-btn" onclick="window.open('https://t.me/{{ student.telegram.replace('@', '') }}', '_blank')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161l-1.68 7.924c-.126.567-.462.708-.936.441l-2.583-1.903-1.245 1.198c-.138.138-.253.253-.52.253l.186-2.636 4.785-4.322c.208-.186-.045-.289-.322-.103l-5.916 3.723-2.548-.796c-.554-.172-.565-.554.115-.821l9.96-3.839c.462-.171.867.103.717.821z"/>
+                        </svg>
+                        <span>Message on Telegram</span>
+                    </button>
+                    <!-- Hidden field with actual username for editing -->
+                    <span style="display:none;" data-field="telegram">{{ student.telegram }}</span>
+                    {% else %}
+                    <p class="no-contact">No contact info available</p>
+                    <span style="display:none;" data-field="telegram"></span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Friends -->
+            <div class="info-card" data-section="friends">
+                <div class="card-header">
+                    <h2 class="section-title">Friends <span class="friends-count">(0)</span></h2>
+                </div>
+                <div class="card-content">
+                    <div class="friends-grid" id="friendsList">
+                        <!-- Friends will be loaded here -->
+                    </div>
+                    <div class="friends-loading" id="friendsLoading" style="display: none;">
+                        <div class="spinner"></div>
+                    </div>
+                    <div class="friends-empty" id="friendsEmpty" style="display: none;">
+                        <p>No friends yet</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="edit-modal" id="editModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Edit Section</h3>
+                <button class="modal-close" onclick="closeEditModal()">✕</button>
+            </div>
+            <form id="editForm" class="modal-form">
+                <div id="modalFormContent">
+                    <!-- Form content will be inserted here -->
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Unfriend Modal -->
+    <div class="confirm-modal" id="unfriendModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-small">
+            <h3>Remove Friend?</h3>
+            <p id="unfriendText">Are you sure you want to remove this friend?</p>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeUnfriendModal()">Cancel</button>
+                <button class="btn-danger" id="confirmUnfriendBtn">Remove</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toastContainer"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Global variables
+    window.profileUserId = {{ student.user_id }};
+    window.isOwnProfile = {{ 'true' if is_own_profile else 'false' }};
+    window.csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    window.studentGender = '{{ student.sex|lower }}';
+</script>
+<script src="{{ url_for('static', filename='profile.js') }}"></script>
+{% endblock %}
