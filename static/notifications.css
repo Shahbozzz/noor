@@ -1,5 +1,8 @@
 /* Notifications Page - Gender-Based Theme (FIXED & OPTIMIZED) */
-
+* {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
 /* Gender-Based Color Variables */
 .container[data-user-gender="male"] {
     --primary-color: #1a73e8;

@@ -6,14 +6,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="{{ url_for('static', filename='form.css') }}">
     <script src="{{ url_for('static', filename='loading.js') }}" defer></script>
+    <style>
+        .show-password {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #666;
+            margin-top: -10px;
+            margin-bottom: 15px;
+        }
+        .show-password input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+        .show-password label {
+            cursor: pointer;
+            user-select: none;
+        }
+    </style>
 </head>
 <body>
-
     <!-- Loading screen -->
     <div id="loading-screen">
         <div class="loader"></div>
     </div>
-
     <div class="form-container">
         <!-- Flash messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -23,17 +40,31 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-
         <h1><b>Register</b></h1>
         <form method="post" action="{{ url_for('auth.verify') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="email" name="email" placeholder="example@student.inha.uz" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <input type="password" name="reset_password" placeholder="Enter Password Again" required>
+            <input type="email" name="email" placeholder="Your email" required>
+            <input type="password" id="password" name="password" placeholder="Password" required>
+            <input type="password" id="reset_password" name="reset_password" placeholder="Enter Password Again" required>
+            
+            <div class="show-password">
+                <input type="checkbox" id="showPass" onclick="togglePasswords()">
+                <label for="showPass">Show passwords</label>
+            </div>
+            
             <input type="submit" value="Register">
         </form>
-        <a href="/login " style="color: #0284c7; text-decoration: none; font-size: 14px;">Already have an account? Log In</a>
+        <a href="/login" style="color: #0284c7; text-decoration: none; font-size: 14px;">Already have an account? Log In</a>
     </div>
 
+<script>
+function togglePasswords() {
+    const pass1 = document.getElementById('password');
+    const pass2 = document.getElementById('reset_password');
+    const type = pass1.type === 'password' ? 'text' : 'password';
+    pass1.type = type;
+    pass2.type = type;
+}
+</script>
 </body>
 </html>

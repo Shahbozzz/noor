@@ -9,14 +9,14 @@
     let hasMorePages = true;
     let searchQuery = '';
     let searchTimeout = null;
-    let isSearchMode = false; // Добавь этот флаг
+    let isSearchMode = false;
 
     // Search students
     async function searchStudents(query) {
         if (isLoading) return;
 
         isLoading = true;
-        isSearchMode = true; // Включаем режим поиска
+        isSearchMode = true;
         showLoader();
 
         try {
@@ -40,18 +40,24 @@
             studentsList.innerHTML = '';
 
             if (data.students.length === 0) {
-                studentsList.innerHTML = '<div class="search-info">No students found for "' + query + '"</div>';
+                studentsList.innerHTML = '<div class="search-info">No students found for "' + escapeHtml(query) + '"</div>';
             } else {
+                // Track added IDs to prevent duplicates
+                const addedIds = new Set();
+                
                 data.students.forEach(student => {
-                    const card = createStudentCard(student);
-                    studentsList.appendChild(card);
+                    if (!addedIds.has(student.user_id)) {
+                        const card = createStudentCard(student);
+                        studentsList.appendChild(card);
+                        addedIds.add(student.user_id);
+                    }
                 });
 
                 // Show result count
                 const info = document.createElement('div');
                 info.className = 'search-info';
                 info.textContent = `Found ${data.total} student${data.total !== 1 ? 's' : ''}`;
-                studentsList.appendChild(info);
+                studentsList.insertBefore(info, studentsList.firstChild);
             }
 
             // Disable pagination during search
@@ -65,6 +71,13 @@
         } finally {
             isLoading = false;
         }
+    }
+
+    // Escape HTML helper
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // Handle search input with debouncing
@@ -104,7 +117,19 @@
     // Reset to normal view (with filters)
     function resetToNormalView() {
         searchQuery = '';
-        isSearchMode = false; // Выключаем режим поиска
+        isSearchMode = false;
+
+        // Clear search input
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+
+        // Hide clear button
+        const clearBtn = document.getElementById('clearSearch');
+        if (clearBtn) {
+            clearBtn.style.display = 'none';
+        }
 
         // Clear students list
         const studentsList = document.getElementById('studentsGrid');
@@ -120,7 +145,7 @@
 
     // Load students from server
     async function loadMoreStudents() {
-        // Не загружать если идет поиск
+        // Don't load if searching or already loading
         if (isLoading || !hasMorePages || isSearchMode) return;
 
         isLoading = true;
@@ -144,10 +169,30 @@
 
             const studentsList = document.getElementById('studentsGrid');
 
-            data.students.forEach(student => {
-                const card = createStudentCard(student);
-                studentsList.appendChild(card);
+            // Collect existing user_ids to prevent duplicates
+            const existingUserIds = new Set();
+            studentsList.querySelectorAll('.student-card-link').forEach(link => {
+                const href = link.getAttribute('href');
+                const match = href.match(/\/profile\/(\d+)/);
+                if (match) {
+                    existingUserIds.add(parseInt(match[1]));
+                }
             });
+
+            // Add only new cards
+            let addedCount = 0;
+            data.students.forEach(student => {
+                if (!existingUserIds.has(student.user_id)) {
+                    const card = createStudentCard(student);
+                    studentsList.appendChild(card);
+                    existingUserIds.add(student.user_id);
+                    addedCount++;
+                } else {
+                    console.log('Skipping duplicate:', student.user_id, student.name);
+                }
+            });
+
+            console.log(`Added ${addedCount} new students out of ${data.students.length}`);
 
             hasMorePages = data.pagination.has_next;
             currentPage++;
@@ -167,9 +212,9 @@
     // Helper function to create detail value spans
     function createDetailValues(text) {
         if (!text) return '';
-        return text.split(', ').map(item =>
-            `<span class="detail-value">${item.trim()}</span>`
-        ).join(' ');
+        return text.split(',').map(item =>
+            `<span class="detail-value">${escapeHtml(item.trim())}</span>`
+        ).join('');
     }
 
     // Create student card HTML
@@ -182,14 +227,16 @@
         card.className = 'student-card';
         card.setAttribute('data-faculty', student.faculty);
         card.setAttribute('data-level', student.level);
-        // Add data-student-gender attribute for proper styling
         card.setAttribute('data-student-gender', (student.sex || 'male').toLowerCase());
+        card.setAttribute('data-user-id', student.user_id); // Add data attribute
 
         let photoHTML = '';
         if (student.photo_thumb_path) {
-            photoHTML = `<img src="/uploads/${student.photo_thumb_path.split('/').pop()}" alt="${student.name}">`;
+            const photoFile = student.photo_thumb_path.split('/').pop();
+            photoHTML = `<img src="/uploads/${photoFile}" alt="${escapeHtml(student.name)}" loading="lazy">`;
         } else if (student.photo_path) {
-            photoHTML = `<img src="/uploads/${student.photo_path.split('/').pop()}" alt="${student.name}">`;
+            const photoFile = student.photo_path.split('/').pop();
+            photoHTML = `<img src="/uploads/${photoFile}" alt="${escapeHtml(student.name)}" loading="lazy">`;
         } else {
             photoHTML = `
                 <div class="photo-placeholder">
@@ -201,24 +248,30 @@
             `;
         }
 
-        card.innerHTML = `
-            <div class="student-photo">
-                ${photoHTML}
-            </div>
-            <div class="student-info">
-                <div class="student-header">
-                    <div class="student-main-info">
-                        <h3 class="student-name">${student.name} ${student.surname}</h3>
-                        <p class="student-faculty">${student.faculty}, ${student.level}</p>
-                    </div>
-                    <button class="add-friend-btn" data-user-id="${student.user_id}" onclick="event.preventDefault(); event.stopPropagation();">Add Friend</button>
-                </div>
-                ${student.hobbies ? `<p class="student-detail hobbies-detail"><strong>Hobbies:</strong> ${createDetailValues(student.hobbies)}</p>` : ''}
-                ${student.favorite_subjects ? `<p class="student-detail subjects-detail"><strong>Favourite Subjects:</strong> ${createDetailValues(student.favorite_subjects)}</p>` : ''}
-                <p class="student-detail relationship-detail"><strong>Relationship Status:</strong> <span class="detail-value">${student.relationship}</span></p>
-            </div>
-        `;
+        const hobbiesHTML = student.hobbies ? 
+            `<p class="student-detail hobbies-detail"><strong>Hobbies:</strong> ${createDetailValues(student.hobbies)}</p>` : '';
+        
+        const subjectsHTML = student.favorite_subjects ? 
+            `<p class="student-detail subjects-detail"><strong>Favourite Subjects:</strong> ${createDetailValues(student.favorite_subjects)}</p>` : '';
 
+
+	card.innerHTML = `
+	    <div class="student-photo">
+	        ${photoHTML}
+	    </div>
+	    <div class="student-info">
+	        <div class="student-header">
+	            <div class="student-main-info">
+	                <h3 class="student-name">${student.name} ${student.surname}</h3>
+	                <p class="student-faculty">${student.faculty}, ${student.level}</p>
+	            </div>
+	            <button class="add-friend-btn" data-user-id="${student.user_id}" onclick="event.preventDefault(); event.stopPropagation();">Add Friend</button>
+	        </div>
+	        ${student.hobbies ? `<p class="student-detail hobbies-detail"><strong>Hobbies:</strong> ${student.hobbies.split(',').map(h => `<span class="detail-value">${h.trim()}</span>`).join('')}</p>` : ''}
+	        ${student.favorite_subjects ? `<p class="student-detail subjects-detail"><strong>Favourite Subjects:</strong> ${student.favorite_subjects.split(',').map(s => `<span class="detail-value">${s.trim()}</span>`).join('')}</p>` : ''}
+	        <p class="student-detail relationship-detail"><strong>Relationship Status:</strong> <span class="detail-value">${student.relationship}</span></p>
+	    </div>
+	`;
         link.appendChild(card);
         return link;
     }
@@ -230,7 +283,10 @@
             loader.id = 'loadingIndicator';
             loader.className = 'loading-indicator';
             loader.innerHTML = '<div class="spinner"></div><p>Loading...</p>';
-            document.querySelector('.students-list').after(loader);
+            const container = document.querySelector('.students-list');
+            if (container) {
+                container.after(loader);
+            }
         }
         loader.style.display = 'flex';
     }
@@ -252,6 +308,20 @@
             // Get faculty value
             currentFaculty = this.dataset.faculty;
 
+            // Reset search mode
+            isSearchMode = false;
+            searchQuery = '';
+            
+            // Clear search input
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            const clearBtn = document.getElementById('clearSearch');
+            if (clearBtn) {
+                clearBtn.style.display = 'none';
+            }
+
             // Reset and reload
             const studentsList = document.getElementById('studentsGrid');
             studentsList.innerHTML = '';
@@ -262,47 +332,72 @@
     });
 
     // Level filter
-    document.getElementById('levelFilter').addEventListener('change', function() {
-        currentLevel = this.value;
+    const levelFilter = document.getElementById('levelFilter');
+    if (levelFilter) {
+        levelFilter.addEventListener('change', function() {
+            currentLevel = this.value;
 
-        // Reset and reload
-        const studentsList = document.getElementById('studentsGrid');
-        studentsList.innerHTML = '';
-        currentPage = 1;
-        hasMorePages = true;
-        loadMoreStudents();
-    });
+            // Reset search mode
+            isSearchMode = false;
+            searchQuery = '';
+            
+            // Clear search input
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            const clearBtn = document.getElementById('clearSearch');
+            if (clearBtn) {
+                clearBtn.style.display = 'none';
+            }
+
+            // Reset and reload
+            const studentsList = document.getElementById('studentsGrid');
+            studentsList.innerHTML = '';
+            currentPage = 1;
+            hasMorePages = true;
+            loadMoreStudents();
+        });
+    }
 
     // Search input
     const searchInput = document.getElementById('searchInput');
     const clearBtn = document.getElementById('clearSearch');
 
-    searchInput.addEventListener('input', function() {
-        handleSearchInput(this.value);
-    });
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            handleSearchInput(this.value);
+        });
+    }
 
-    clearBtn.addEventListener('click', function() {
-        searchInput.value = '';
-        this.style.display = 'none';
-        resetToNormalView();
-    });
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            this.style.display = 'none';
+            resetToNormalView();
+        });
+    }
 
     // Mobile search expansion
     const searchBox = document.querySelector('.search-box');
     const searchIcon = document.querySelector('.search-icon');
 
-    if (window.innerWidth <= 768) {
+    if (searchBox && searchIcon && window.innerWidth <= 768) {
         searchIcon.addEventListener('click', function(e) {
             if (!searchBox.classList.contains('expanded')) {
                 e.stopPropagation();
                 searchBox.classList.add('expanded');
-                searchInput.focus();
+                if (searchInput) {
+                    searchInput.focus();
+                }
             }
         });
 
         document.addEventListener('click', function(e) {
             if (!searchBox.contains(e.target) && searchBox.classList.contains('expanded')) {
-                if (!searchInput.value) {
+                if (!searchInput || !searchInput.value) {
                     searchBox.classList.remove('expanded');
                 }
             }
@@ -311,7 +406,7 @@
 
     // Infinite scroll
     window.addEventListener('scroll', () => {
-        if (isSearchMode) return; // Не загружать при поиске
+        if (isSearchMode) return;
 
         const scrollPosition = window.innerHeight + window.scrollY;
         const threshold = document.documentElement.scrollHeight - 300;
@@ -321,8 +416,9 @@
         }
     });
 
-    // Initial load
-    if (document.getElementById('studentsGrid').children.length === 0) {
+    // Initial load - only if grid is empty and not in search mode
+    const studentsGrid = document.getElementById('studentsGrid');
+    if (studentsGrid && studentsGrid.children.length === 0 && !isSearchMode) {
         loadMoreStudents();
     }
 
@@ -528,7 +624,10 @@
         // Add click handlers to all friend buttons
         const buttons = document.querySelectorAll('.add-friend-btn');
         buttons.forEach(btn => {
-            btn.addEventListener('click', handleFriendButtonClick);
+            if (!btn.dataset.initialized) {
+                btn.dataset.initialized = 'true';
+                btn.addEventListener('click', handleFriendButtonClick);
+            }
         });
 
         // Initial status update

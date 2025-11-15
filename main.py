@@ -8,7 +8,6 @@ import json
 from flask import Flask, render_template, request, session, send_from_directory
 from flask_wtf.csrf import CSRFProtect
 from flask_session import Session
-import redis
 
 from api.voice import voice_api
 from config import get_config
@@ -23,24 +22,17 @@ from api.students import students_api
 from api.friends import friends_api
 from api.profile_edit import profile_edit_api
 
+# ✅ Import Redis clients (session = bytes, cache = strings)
+from utils.redis_client import redis_client_session, redis_client
+
 # --- Initialize Flask app ---
 app = Flask(__name__)
 app.config.from_object(get_config())
 
-# ✅ Initialize Redis for sessions (НОВОЕ!)
-# Поддержка обоих форматов .env (REDIS_URL или REDIS_HOST/PORT/DB)
-redis_url = app.config.get('REDIS_URL')
-if not redis_url:
-    # Fallback к старому формату
-    redis_host = os.getenv('REDIS_HOST', 'localhost')
-    redis_port = int(os.getenv('REDIS_PORT', 6379))
-    redis_db = int(os.getenv('REDIS_DB', 0))
-    redis_url = f"redis://{redis_host}:{redis_port}/{redis_db}"
+# ✅ Flask-Session uses redis_client_session (decode_responses=False for pickle)
+app.config['SESSION_REDIS'] = redis_client_session
 
-redis_client = redis.from_url(redis_url, decode_responses=True)
-app.config['SESSION_REDIS'] = redis_client
-
-# ✅ Initialize Flask-Session (НОВОЕ!)
+# ✅ Initialize Flask-Session
 Session(app)
 
 # --- CSRF Protection ---
@@ -61,6 +53,7 @@ def log_request():
 # --- Initialize Database ---
 db.init_app(app)
 
+# ... остальное без изменений
 # Initialize limiter
 limiter = Limiter(
     app=app,

@@ -9,7 +9,7 @@ from api.helpers import check_api_auth
 import bleach
 import re
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 # Create API Blueprint
 voice_api = Blueprint('voice_api', __name__, url_prefix='/api')
@@ -200,7 +200,8 @@ def create_or_update_post():
             text=text,
             faculty_group=user_faculty_group
         )
-        db.session.add(new_post)
+	
+       	db.session.add(new_post)
         db.session.commit()
 
         response = make_response(jsonify({'success': True, 'message': 'Post created'}))

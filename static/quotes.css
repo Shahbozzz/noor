@@ -1,7 +1,10 @@
 /* Quotes Page - Faculty-Based with Gender Colors */
 
 /* ==================== BODY BACKGROUND COLORS (NEW) ==================== */
-
+* {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
 body.user-male {
     background: #AEE7FF !important;
     min-height: 100vh;

@@ -129,7 +129,7 @@
                         </div>
                     {% endif %}
                     {% if is_own_profile %}
-                    <button class="photo-edit-btn" onclick="document.getElementById('photoUploadInput').click()">
+                    <button class="photo-edit-btn">
                         <span>📸</span>
                     </button>
                     <input type="file" id="photoUploadInput" accept="image/*" style="display: none;">
@@ -326,4 +326,321 @@
     window.studentGender = '{{ student.sex|lower }}';
 </script>
 <script src="{{ url_for('static', filename='profile.js') }}"></script>
+<script>
+window.addEventListener('load', async function() {
+    const photoBtn = document.querySelector('.photo-edit-btn');
+    const photoInput = document.getElementById('photoUploadInput');
+    const profileImage = document.querySelector('.profile-image, .profile-image-placeholder');
+    
+    // State
+    let hasCustomPhoto = false;
+    let uploadsRemaining = 3;
+    
+    if (!photoBtn || !photoInput || !window.isOwnProfile) return;
+    
+    // Toast function
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        const colors = {
+            success: '#10b981',
+            error: '#ef4444',
+            info: '#3b82f6'
+        };
+        
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: white;
+            color: #333;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            border-left: 4px solid ${colors[type]};
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+            font-size: 14px;
+            max-width: 300px;
+        `;
+        
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+    
+    // Add animation styles
+    if (!document.getElementById('toast-styles')) {
+        const style = document.createElement('style');
+        style.id = 'toast-styles';
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(400px); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(400px); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Load upload stats
+    try {
+        const response = await fetch('/api/profile/photo/stats');
+        const data = await response.json();
+        if (data.success) {
+            hasCustomPhoto = data.has_custom_photo;
+            uploadsRemaining = data.uploads_remaining;
+        }
+    } catch (e) {
+        console.error('Failed to load stats:', e);
+    }
+    
+    // Photo button click handler
+    photoBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (!hasCustomPhoto) {
+            photoInput.click();
+            return;
+        }
+        
+        showPhotoMenu();
+    });
+    
+    // Photo upload handler
+    photoInput.addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        e.target.value = '';
+        
+        // Validate
+        if (!file.type.match('image.*')) {
+            showToast('Please select an image file', 'error');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            showToast('File too large (max 5MB)', 'error');
+            return;
+        }
+        if (uploadsRemaining <= 0) {
+            showToast('Daily upload limit reached (3 per day)', 'error');
+            return;
+        }
+        
+        showToast('Uploading photo...', 'info');
+        
+        // Upload
+        const formData = new FormData();
+        formData.append('photo', file);
+        
+        try {
+            const response = await fetch('/api/profile/photo', {
+                method: 'POST',
+                headers: {'X-CSRFToken': window.csrfToken},
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast('Photo uploaded! ' + result.uploads_remaining + ' uploads remaining today', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else if (result.limit_reached) {
+                showToast('Daily upload limit reached! Try again tomorrow', 'error');
+            } else {
+                showToast(result.error || 'Upload failed', 'error');
+            }
+        } catch (error) {
+            showToast('Upload failed', 'error');
+        }
+    });
+    
+    // Show photo menu
+    function showPhotoMenu() {
+        const menu = document.createElement('div');
+        menu.style.cssText = `
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.2s ease;
+        `;
+        
+        const content = document.createElement('div');
+        content.style.cssText = `
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            min-width: 280px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: scaleIn 0.3s ease;
+        `;
+        
+        const uploadBtn = createMenuButton(
+            '📸',
+            'Upload Photo',
+            uploadsRemaining > 0 ? uploadsRemaining + ' left today' : 'Limit reached',
+            uploadsRemaining === 0
+        );
+        
+        const deleteBtn = createMenuButton(
+            '🗑️',
+            'Delete Photo',
+            'Revert to default',
+            false
+        );
+        
+        if (uploadsRemaining > 0) {
+            uploadBtn.onclick = () => {
+                menu.remove();
+                photoInput.click();
+            };
+        }
+        
+        deleteBtn.onclick = () => {
+            menu.remove();
+            deletePhoto();
+        };
+        
+        content.appendChild(uploadBtn);
+        content.appendChild(deleteBtn);
+        menu.appendChild(content);
+        document.body.appendChild(menu);
+        
+        menu.onclick = (e) => {
+            if (e.target === menu) menu.remove();
+        };
+        
+        // Add animation
+        const animStyle = document.createElement('style');
+        animStyle.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes scaleIn {
+                from { transform: scale(0.9); opacity: 0; }
+                to { transform: scale(1); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(animStyle);
+    }
+    
+    function createMenuButton(icon, text, subtext, disabled) {
+        const btn = document.createElement('button');
+        btn.style.cssText = `
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            cursor: ${disabled ? 'not-allowed' : 'pointer'};
+            width: 100%;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+            opacity: ${disabled ? '0.5' : '1'};
+        `;
+        
+        btn.innerHTML = `
+            <span style="font-size: 24px;">${icon}</span>
+            <div style="flex: 1; text-align: left;">
+                <div style="font-size: 15px; font-weight: 600; color: #333;">${text}</div>
+                <div style="font-size: 12px; color: #666;">${subtext}</div>
+            </div>
+        `;
+        
+        if (!disabled) {
+            btn.onmouseover = () => {
+                btn.style.borderColor = '#4A90E2';
+                btn.style.transform = 'translateY(-2px)';
+                btn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+            };
+            btn.onmouseout = () => {
+                btn.style.borderColor = '#e0e0e0';
+                btn.style.transform = 'translateY(0)';
+                btn.style.boxShadow = 'none';
+            };
+        }
+        
+        return btn;
+    }
+    
+    async function deletePhoto() {
+        // Custom confirm dialog
+        const confirmDialog = document.createElement('div');
+        confirmDialog.style.cssText = `
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+        
+        const dialogContent = document.createElement('div');
+        dialogContent.style.cssText = `
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        `;
+        
+        dialogContent.innerHTML = `
+            <h3 style="margin: 0 0 12px; font-size: 20px; color: #333;">Delete Photo?</h3>
+            <p style="margin: 0 0 24px; color: #666; font-size: 15px;">Your profile will revert to the default photo.</p>
+            <div style="display: flex; gap: 12px;">
+                <button id="cancelBtn" style="flex: 1; padding: 12px; border: 2px solid #4A90E2; background: white; color: #4A90E2; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancel</button>
+                <button id="confirmBtn" style="flex: 1; padding: 12px; border: none; background: #ef4444; color: white; border-radius: 8px; cursor: pointer; font-weight: 600;">Delete</button>
+            </div>
+        `;
+        
+        confirmDialog.appendChild(dialogContent);
+        document.body.appendChild(confirmDialog);
+        
+        confirmDialog.querySelector('#cancelBtn').onclick = () => confirmDialog.remove();
+        confirmDialog.querySelector('#confirmBtn').onclick = async () => {
+            confirmDialog.remove();
+            
+            showToast('Deleting photo...', 'info');
+            
+            try {
+                const response = await fetch('/api/profile/photo', {
+                    method: 'DELETE',
+                    headers: {'X-CSRFToken': window.csrfToken}
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('Photo deleted successfully!', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showToast(data.error || 'Failed to delete photo', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to delete photo', 'error');
+            }
+        };
+    }
+    
+    console.log('✅ Photo management ready!');
+});
+</script>
 {% endblock %}

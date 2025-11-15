@@ -36,21 +36,46 @@ def validate_birthday(birthday_str):
     except ValueError:
         return False, "Invalid date. Please check the day and month values"
 
+import re
+
 def validate_email(email):
     """
-    Validate email format for @student.inha.uz domain
-
+    Validate email format for popular email providers
+    
+    Allowed domains:
+    - @student.inha.uz (university email)
+    - @gmail.com
+    - @outlook.com, @hotmail.com
+    - @yandex.ru, @yandex.com
+    - @mail.ru
+    
     Args:
         email (str): Email to validate
-
+        
     Returns:
-        bool: True if valid, False otherwise
+        bool: True if valid format and allowed domain
     """
-    if not email or not isinstance(email, str):
+    # List of allowed domains
+    allowed_domains = [
+        '@student.inha.uz',
+        '@gmail.com',
+        '@outlook.com',
+        '@hotmail.com',
+        '@yandex.ru',
+        '@yandex.com',
+        '@mail.ru',
+	'@icloud.com'
+    ]
+    
+    # Check if email ends with any allowed domain
+    if not any(email.lower().endswith(domain) for domain in allowed_domains):
         return False
-
-    pattern = r'^[a-zA-Z0-9._%+-]+@student\.inha\.uz$'
-    return re.match(pattern, email) is not None
+    
+    # RFC 5322 compliant email regex
+    # Allows letters, numbers, dots, hyphens, underscores, apostrophes, plus signs
+    email_pattern = r'^[a-zA-Z0-9._%+\'-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    
+    return bool(re.match(email_pattern, email.lower()))
 
 
 def validate_password(password):
@@ -71,9 +96,6 @@ def validate_password(password):
 
     if len(password) > MAX_PASSWORD_LENGTH:
         return False, f"Password must not exceed {MAX_PASSWORD_LENGTH} characters"
-
-    if not re.search(r'[A-Z]', password):
-        return False, "Password must contain at least one uppercase letter"
 
 
     return True, ""

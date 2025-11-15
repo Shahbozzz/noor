@@ -1,5 +1,5 @@
 // ===================================
-// PROFILE REDESIGN - MODERN JAVASCRIPT (UPDATED VERSION)
+// PROFILE REDESIGN - MODERN JAVASCRIPT (PHOTO MANAGEMENT UPDATE)
 // ===================================
 
 (function() {
@@ -13,7 +13,10 @@
         currentFriendStatus: null,
         friendToRemove: null,
         isLoadingFriends: false,
-        editingSection: null
+        editingSection: null,
+        hasCustomPhoto: false,
+        uploadsToday: 0,
+        uploadsRemaining: 3
     };
 
     // Configuration
@@ -26,18 +29,19 @@
         maxSubjectsLength: 50,
         maxProfessorLength: 30,
         toastDuration: 3000,
-        animationDuration: 300
+        animationDuration: 300,
+        dailyUploadLimit: 3
     };
 
-    // Initialize on DOM load
-    document.addEventListener('DOMContentLoaded', init);
+	    // Initialize on DOM load
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }	
 
     function init() {
-        console.log('Initializing profile page...');
-        console.log('Profile User ID:', window.profileUserId);
-        console.log('Is Own Profile:', window.isOwnProfile);
-        console.log('CSRF Token:', window.csrfToken ? 'Present' : 'Missing');
-
         cacheElements();
         initializeEventListeners();
         loadInitialData();
@@ -61,29 +65,23 @@
         elements.toastContainer = document.getElementById('toastContainer');
         elements.photoUploadInput = document.getElementById('photoUploadInput');
         elements.editButtons = document.querySelectorAll('.edit-section-btn');
-
-        console.log('Elements cached:', {
-            friendBtn: !!elements.friendBtn,
-            friendsList: !!elements.friendsList,
-            editModal: !!elements.editModal
-        });
+        elements.photoEditBtn = document.querySelector('.photo-edit-btn');
+        elements.profileImage = document.querySelector('.profile-image, .profile-image-placeholder');
     }
 
     // Initialize all event listeners
     function initializeEventListeners() {
         // Friend button
         if (elements.friendBtn && !window.isOwnProfile) {
-            console.log('Adding friend button listener');
             elements.friendBtn.addEventListener('click', handleFriendAction);
         }
 
-        // Edit buttons - Fixed selector
+        // Edit buttons
         document.querySelectorAll('.edit-section-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 const section = btn.dataset.section;
-                console.log('Edit button clicked for section:', section);
                 openEditModal(section);
             });
         });
@@ -110,16 +108,18 @@
             }
         });
 
-        // Photo upload
-        if (elements.photoUploadInput) {
-            elements.photoUploadInput.addEventListener('change', handlePhotoUpload);
+        // Photo edit button
+        if (elements.photoEditBtn && window.isOwnProfile) {
+            elements.photoEditBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                showPhotoActionMenu(e);
+            });
         }
     }
 
     // Load initial data
     async function loadInitialData() {
-        console.log('Loading initial data...');
-
         // Load friend status if not own profile
         if (!window.isOwnProfile && elements.friendBtn) {
             await loadFriendStatus();
@@ -127,6 +127,300 @@
 
         // Load friends list
         await loadFriends();
+
+        // Load upload stats if own profile
+        if (window.isOwnProfile) {
+            await loadUploadStats();
+        }
+    }
+
+    // ===================================
+    // PHOTO MANAGEMENT (NEW!)
+    // ===================================
+
+    async function loadUploadStats() {
+        try {
+            const response = await fetchWithRetry('/api/profile/photo/stats');
+            if (!response.ok) throw new Error('Failed to load stats');
+
+            const data = await response.json();
+            if (data.success) {
+                state.hasCustomPhoto = data.has_custom_photo;
+                state.uploadsToday = data.uploads_today;
+                state.uploadsRemaining = data.uploads_remaining;
+            }
+        } catch (error) {
+            console.error('Error loading upload stats:', error);
+        }
+    }
+
+    function showPhotoActionMenu(event) {
+        event.stopPropagation();
+
+        // If no custom photo, directly open file picker
+        if (!state.hasCustomPhoto) {
+            elements.photoUploadInput.click();
+            return;
+        }
+
+        // ✅ Has custom photo - show action menu
+        const menu = createPhotoActionMenu();
+        document.body.appendChild(menu);
+
+        // Position menu near the button
+        const btnRect = elements.photoEditBtn.getBoundingClientRect();
+        menu.style.top = `${btnRect.bottom + 10}px`;
+        menu.style.left = `${btnRect.left - 80}px`;
+
+        // Animate in
+        requestAnimationFrame(() => {
+            menu.classList.add('active');
+        });
+
+        // Close on outside click
+        setTimeout(() => {
+            document.addEventListener('click', function closeMenu(e) {
+                if (!menu.contains(e.target)) {
+                    closePhotoActionMenu(menu);
+                    document.removeEventListener('click', closeMenu);
+                }
+            });
+        }, 100);
+    }
+
+    function createPhotoActionMenu() {
+        const menu = document.createElement('div');
+        menu.className = 'photo-action-menu';
+        menu.id = 'photoActionMenu';
+
+        const uploadLimitText = state.uploadsRemaining > 0 
+            ? `${state.uploadsRemaining} left today` 
+            : 'Limit reached';
+
+        menu.innerHTML = `
+            <div class="photo-action-overlay"></div>
+            <div class="photo-action-content">
+                <button class="photo-action-btn upload-btn" id="uploadPhotoBtn" ${state.uploadsRemaining === 0 ? 'disabled' : ''}>
+                    <span class="btn-icon">📸</span>
+                    <div class="btn-content">
+                        <span class="btn-text">Upload Photo</span>
+                        <span class="btn-sub">${uploadLimitText}</span>
+                    </div>
+                </button>
+                <button class="photo-action-btn delete-btn" id="deletePhotoBtn">
+                    <span class="btn-icon">🗑️</span>
+                    <div class="btn-content">
+                        <span class="btn-text">Delete Photo</span>
+                        <span class="btn-sub">Revert to default</span>
+                    </div>
+                </button>
+            </div>
+        `;
+
+        // Add event listeners
+        const uploadBtn = menu.querySelector('#uploadPhotoBtn');
+        const deleteBtn = menu.querySelector('#deletePhotoBtn');
+
+        if (uploadBtn && state.uploadsRemaining > 0) {
+            uploadBtn.onclick = (e) => {
+                e.stopPropagation();
+                closePhotoActionMenu(menu);
+                elements.photoUploadInput.click();
+            };
+        }
+
+        if (deleteBtn) {
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                closePhotoActionMenu(menu);
+                handlePhotoDelete();
+            };
+        }
+
+        return menu;
+    }
+
+    function closePhotoActionMenu(menu) {
+        if (!menu) {
+            menu = document.getElementById('photoActionMenu');
+        }
+        if (menu) {
+            menu.classList.remove('active');
+            setTimeout(() => menu.remove(), 300);
+        }
+    }
+
+    async function handlePhotoDelete() {
+        // Show confirmation with custom style
+        const confirmed = await showCustomConfirm(
+            'Delete Photo?',
+            'Your profile will revert to the default photo. This action cannot be undone.'
+        );
+
+        if (!confirmed) return;
+
+        // Optimistic UI update
+        const currentSrc = elements.profileImage.src;
+        const defaultPhoto = window.studentGender === 'male' ? '/uploads/male_iut.png' : '/uploads/female_iut.png';
+        elements.profileImage.src = defaultPhoto;
+
+        showToast('Deleting photo...', 'info');
+
+        try {
+            const response = await fetchWithRetry('/api/profile/photo', {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': window.csrfToken
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                state.hasCustomPhoto = false;
+                showToast('Photo deleted successfully!', 'success');
+                // Reload page to update all instances
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                // Revert on error
+                elements.profileImage.src = currentSrc;
+                showToast(data.error || 'Failed to delete photo', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting photo:', error);
+            elements.profileImage.src = currentSrc;
+            showToast('Failed to delete photo', 'error');
+        }
+    }
+
+    function setupPhotoUpload() {
+        if (!elements.photoUploadInput || !window.isOwnProfile) return;
+
+        elements.photoUploadInput.addEventListener('change', handlePhotoUpload);
+    }
+
+    async function handlePhotoUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Reset input for next time
+        e.target.value = '';
+
+        await handlePhotoFile(file);
+    }
+
+    async function handlePhotoFile(file) {
+        // Validate file type
+        if (!file.type.match('image.*')) {
+            showToast('Please select an image file', 'error');
+            return;
+        }
+
+        // Validate file size
+        if (file.size > config.maxPhotoSize) {
+            showToast('File too large (max 5MB)', 'error');
+            return;
+        }
+
+        // ✅ Check daily limit
+        if (state.uploadsRemaining <= 0) {
+            showToast('Daily upload limit reached (3 per day)', 'error');
+            return;
+        }
+
+        // ✅ Optimistic UI update
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (elements.profileImage) {
+                elements.profileImage.src = e.target.result;
+            }
+        };
+        reader.readAsDataURL(file);
+
+        const formData = new FormData();
+        formData.append('photo', file);
+
+        showToast(`Uploading photo... (${state.uploadsRemaining} uploads left today)`, 'info');
+
+        try {
+            const response = await fetchWithRetry('/api/profile/photo', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': window.csrfToken
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                state.hasCustomPhoto = true;
+                state.uploadsToday = result.uploads_today;
+                state.uploadsRemaining = result.uploads_remaining;
+
+                showToast(`Photo uploaded! ${result.uploads_remaining} uploads remaining today`, 'success');
+                
+                // Reload page to update all instances
+                setTimeout(() => window.location.reload(), 1000);
+            } else if (result.limit_reached) {
+                showToast('Daily upload limit reached! Try again tomorrow', 'error');
+                state.uploadsRemaining = 0;
+                // Reload to revert optimistic update
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showToast(result.error || 'Upload failed', 'error');
+                // Reload to revert optimistic update
+                setTimeout(() => window.location.reload(), 1000);
+            }
+        } catch (error) {
+            console.error('Error uploading photo:', error);
+            showToast('Upload failed', 'error');
+            // Reload to revert optimistic update
+            setTimeout(() => window.location.reload(), 1000);
+        }
+    }
+
+    // ===================================
+    // CUSTOM CONFIRM DIALOG
+    // ===================================
+
+    function showCustomConfirm(title, message) {
+        return new Promise((resolve) => {
+            const modal = document.createElement('div');
+            modal.className = 'confirm-modal active';
+            modal.innerHTML = `
+                <div class="modal-overlay"></div>
+                <div class="modal-content modal-small">
+                    <h3>${title}</h3>
+                    <p>${message}</p>
+                    <div class="modal-actions">
+                        <button class="btn-secondary" id="confirmCancel">Cancel</button>
+                        <button class="btn-danger" id="confirmOk">Delete</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            document.body.style.overflow = 'hidden';
+
+            modal.querySelector('#confirmCancel').onclick = () => {
+                modal.remove();
+                document.body.style.overflow = '';
+                resolve(false);
+            };
+
+            modal.querySelector('#confirmOk').onclick = () => {
+                modal.remove();
+                document.body.style.overflow = '';
+                resolve(true);
+            };
+
+            modal.querySelector('.modal-overlay').onclick = () => {
+                modal.remove();
+                document.body.style.overflow = '';
+                resolve(false);
+            };
+        });
     }
 
     // ===================================
@@ -754,83 +1048,6 @@
     }
 
     // ===================================
-    // PHOTO UPLOAD
-    // ===================================
-
-    function setupPhotoUpload() {
-        if (!elements.photoUploadInput) return;
-
-        // Drag and drop support (optional enhancement)
-        const photoWrapper = document.querySelector('.profile-image-wrapper');
-        if (photoWrapper && window.isOwnProfile) {
-            photoWrapper.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                photoWrapper.classList.add('drag-over');
-            });
-
-            photoWrapper.addEventListener('dragleave', () => {
-                photoWrapper.classList.remove('drag-over');
-            });
-
-            photoWrapper.addEventListener('drop', (e) => {
-                e.preventDefault();
-                photoWrapper.classList.remove('drag-over');
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    handlePhotoFile(files[0]);
-                }
-            });
-        }
-    }
-
-    async function handlePhotoUpload(e) {
-        const file = e.target.files[0];
-        if (file) {
-            await handlePhotoFile(file);
-        }
-    }
-
-    async function handlePhotoFile(file) {
-        // Validate file
-        if (!file.type.match('image.*')) {
-            showToast('Please select an image file', 'error');
-            return;
-        }
-
-        if (file.size > config.maxPhotoSize) {
-            showToast('File too large (max 5MB)', 'error');
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('photo', file);
-
-        showToast('Uploading photo...', 'info');
-
-        try {
-            const response = await fetchWithRetry('/api/profile/photo', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': window.csrfToken
-                },
-                body: formData
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                showToast('Photo uploaded successfully!', 'success');
-                setTimeout(() => window.location.reload(), 1000);
-            } else {
-                showToast(result.error || 'Upload failed', 'error');
-            }
-        } catch (error) {
-            console.error('Error uploading photo:', error);
-            showToast('Upload failed', 'error');
-        }
-    }
-
-    // ===================================
     // UTILITIES
     // ===================================
 
@@ -892,6 +1109,7 @@
     function closeAllModals() {
         closeEditModal();
         closeUnfriendModal();
+        closePhotoActionMenu();
     }
 
     // Expose some functions globally for inline handlers
@@ -899,3 +1117,4 @@
     window.closeUnfriendModal = closeUnfriendModal;
 
 })();
+

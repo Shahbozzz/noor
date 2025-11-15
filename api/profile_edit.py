@@ -1,5 +1,5 @@
 """
-API endpoints for Profile Editing (UPDATED WITH NAME/SURNAME)
+API endpoints for Profile Editing (UPDATED WITH NAME/SURNAME + PHOTO DELETE)
 """
 from flask import Blueprint, jsonify, request, session
 from werkzeug.utils import secure_filename
@@ -8,14 +8,14 @@ from api.helpers import check_api_auth
 import os
 import bleach
 from PIL import Image
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
 
 profile_edit_api = Blueprint('profile_edit_api', __name__, url_prefix='/api/profile')
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 UPLOAD_FOLDER = 'static/uploads'
-MAX_FILE_SIZE = 16 * 1024 * 1024  # 5MB
+MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 
 
 def allowed_file(filename):
@@ -52,6 +52,51 @@ def get_upload_folder():
         os.makedirs(upload_folder, exist_ok=True)
 
     return upload_folder
+
+
+# ----------------------------
+# Redis Daily Upload Tracking
+# ----------------------------
+def get_daily_upload_count(user_id):
+    """Get user's upload count for today using Redis"""
+    try:
+        from main import redis_client
+        today = datetime.now().strftime('%Y-%m-%d')
+        redis_key = f"photo_uploads:{user_id}:{today}"
+        count = redis_client.get(redis_key)
+        return int(count) if count else 0
+    except Exception:
+        return 0
+
+
+def increment_daily_upload_count(user_id):
+    """Increment user's upload count for today (expires at midnight)"""
+    try:
+        from main import redis_client
+        today = datetime.now().strftime('%Y-%m-%d')
+        redis_key = f"photo_uploads:{user_id}:{today}"
+        
+        # Calculate seconds until midnight
+        now = datetime.now()
+        midnight = datetime.combine(now.date() + timedelta(days=1), datetime.min.time())
+        seconds_until_midnight = int((midnight - now).total_seconds())
+        
+        # Increment and set expiry
+        pipe = redis_client.pipeline()
+        pipe.incr(redis_key)
+        pipe.expire(redis_key, seconds_until_midnight)
+        pipe.execute()
+        
+        return get_daily_upload_count(user_id)
+    except Exception:
+        return 1
+
+
+def get_default_photo_path(sex):
+    """Get path to default photo based on gender"""
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    default_filename = 'male_iut.png' if sex.lower() == 'male' else 'female_iut.png'
+    return os.path.join(base_dir, 'static', 'uploads', default_filename)
 
 
 # ----------------------------
@@ -382,7 +427,7 @@ def update_about():
 # ----------------------------
 @profile_edit_api.route('/photo', methods=['POST'])
 def update_photo():
-    """Upload new profile photo"""
+    """Upload new profile photo (max 3 per day)"""
     from main import limiter
     @limiter.limit("20 per hour")
     def _inner():
@@ -391,6 +436,16 @@ def update_photo():
             return jsonify({'success': False, 'error': 'Unauthorized'}), 401
 
         try:
+            # ✅ Check daily upload limit (3 per day)
+            upload_count = get_daily_upload_count(user.id)
+            if upload_count >= 3:
+                return jsonify({
+                    'success': False, 
+                    'error': 'Daily upload limit reached (3 per day)',
+                    'limit_reached': True,
+                    'uploads_today': upload_count
+                }), 429
+
             if 'photo' not in request.files:
                 return jsonify({'success': False, 'error': 'No file uploaded'}), 400
 
@@ -400,7 +455,7 @@ def update_photo():
                 return jsonify({'success': False, 'error': 'No file selected'}), 400
 
             if not allowed_file(file.filename):
-                return jsonify({'success': False, 'error': 'Invalid file type'}), 400
+                return jsonify({'success': False, 'error': 'Invalid file type. Use PNG, JPG, JPEG, or WebP'}), 400
 
             # Check file size
             file.seek(0, os.SEEK_END)
@@ -417,9 +472,9 @@ def update_photo():
 
             upload_folder = get_upload_folder()
 
-            # Generate unique filename
+            # Generate unique filename for WebP
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = secure_filename(f"user_{user.id}_{timestamp}.jpg")
+            filename = secure_filename(f"user_{user.id}_{timestamp}.webp")
             filepath = os.path.join(upload_folder, filename)
 
             # Save and process image
@@ -433,48 +488,164 @@ def update_photo():
                 background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
                 img = background
 
-            # Resize main image (max 800x800)
+            # Resize main image (max 800x800) and save as WebP
             img.thumbnail((800, 800), Image.Resampling.LANCZOS)
-            img.save(filepath, 'JPEG', quality=85, optimize=True)
+            img.save(filepath, 'WEBP', quality=85, optimize=True)
 
-            # Create thumbnail (150x150)
-            thumb_filename = f"user_{user.id}_{timestamp}_thumb.jpg"
+            # Create thumbnail (150x150) as WebP
+            thumb_filename = f"user_{user.id}_{timestamp}_thumb.webp"
             thumb_filepath = os.path.join(upload_folder, thumb_filename)
 
             thumb = img.copy()
             thumb.thumbnail((150, 150), Image.Resampling.LANCZOS)
-            thumb.save(thumb_filepath, 'JPEG', quality=80, optimize=True)
+            thumb.save(thumb_filepath, 'WEBP', quality=80, optimize=True)
 
-            # Delete old photos
-            if form.photo_path and os.path.exists(form.photo_path):
-                try:
-                    os.remove(form.photo_path)
-                except Exception:
-                    pass
+            # ✅ Delete old photos (only if not default photos)
+            if form.photo_path and form.photo_path != 'male_iut.png' and form.photo_path != 'female_iut.png':
+                old_filepath = os.path.join(upload_folder, form.photo_path)
+                if os.path.exists(old_filepath):
+                    try:
+                        os.remove(old_filepath)
+                    except Exception:
+                        pass
 
-            if form.photo_thumb_path and os.path.exists(form.photo_thumb_path):
-                try:
-                    os.remove(form.photo_thumb_path)
-                except Exception:
-                    pass
+            if form.photo_thumb_path and form.photo_thumb_path != 'male_iut.png' and form.photo_thumb_path != 'female_iut.png':
+                old_thumb_filepath = os.path.join(upload_folder, form.photo_thumb_path)
+                if os.path.exists(old_thumb_filepath):
+                    try:
+                        os.remove(old_thumb_filepath)
+                    except Exception:
+                        pass
 
-            # Update database with full paths
-            form.photo_path = filepath
-            form.photo_thumb_path = thumb_filepath
+            # Update database with FILENAME ONLY (not full path)
+            form.photo_path = filename
+            form.photo_thumb_path = thumb_filename
+            db.session.commit()
+            clear_user_cache()
+
+            # ✅ Increment daily upload count
+            new_count = increment_daily_upload_count(user.id)
+
+            return jsonify({
+                'success': True,
+                'message': 'Photo uploaded successfully!',
+                'data': {
+                    'photo_path': f"/uploads/{filename}",
+                    'photo_thumb_path': f"/uploads/{thumb_filename}"
+                },
+                'uploads_today': new_count,
+                'uploads_remaining': 3 - new_count
+            })
+
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': 'Failed to upload photo'}), 500
+
+    return _inner()
+
+# ----------------------------
+# Delete Photo
+# ----------------------------
+@profile_edit_api.route('/photo', methods=['DELETE'])
+def delete_photo():
+    """Delete profile photo and revert to default"""
+    from main import limiter
+    @limiter.limit("20 per hour")
+    def _inner():
+        user = check_api_auth()
+        if not user:
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+
+        try:
+            form = Form.query.filter_by(user_id=user.id, active=True).first()
+
+            if not form:
+                return jsonify({'success': False, 'error': 'Profile not found'}), 404
+
+            # ✅ Check if user has a custom photo (not default)
+            has_custom_photo = False
+            if form.photo_path:
+                has_custom_photo = not form.photo_path.startswith(('male_iut', 'female_iut', 'default_male', 'default_female'))
+
+            if not has_custom_photo:
+                return jsonify({
+                    'success': False,
+                    'error': 'No custom photo to delete'
+                }), 400
+
+            upload_folder = get_upload_folder()
+
+            # ✅ Delete physical files
+            if form.photo_path:
+                photo_filepath = os.path.join(upload_folder, form.photo_path)
+                if os.path.exists(photo_filepath):
+                    try:
+                        os.remove(photo_filepath)
+                    except Exception as e:
+                        print(f"Error deleting photo: {e}")
+
+            if form.photo_thumb_path:
+                thumb_filepath = os.path.join(upload_folder, form.photo_thumb_path)
+                if os.path.exists(thumb_filepath):
+                    try:
+                        os.remove(thumb_filepath)
+                    except Exception as e:
+                        print(f"Error deleting thumbnail: {e}")
+
+            # ✅ Revert to default WebP photos based on gender
+            if form.sex.lower() == 'male':
+                form.photo_path = 'default_male.webp'
+                form.photo_thumb_path = 'default_male_thumb.webp'
+            else:
+                form.photo_path = 'default_female.webp'
+                form.photo_thumb_path = 'default_female_thumb.webp'
+
             db.session.commit()
             clear_user_cache()
 
             return jsonify({
                 'success': True,
-                'message': 'Photo updated',
+                'message': 'Photo deleted successfully!',
                 'data': {
-                    'photo_path': f"/uploads/{filename}",
-                    'photo_thumb_path': f"/uploads/{thumb_filename}"
+                    'photo_path': f"/uploads/{form.photo_path}",
+                    'photo_thumb_path': f"/uploads/{form.photo_thumb_path}",
+                    'is_default': True
                 }
             })
 
         except Exception as e:
             db.session.rollback()
-            return jsonify({'success': False, 'error': 'Internal server error'}), 500
+            return jsonify({'success': False, 'error': 'Failed to delete photo'}), 500
 
     return _inner()
+# ----------------------------
+# Get Daily Upload Stats
+# ----------------------------
+# ----------------------------
+# Get Daily Upload Stats
+# ----------------------------
+@profile_edit_api.route('/photo/stats', methods=['GET'])
+def get_upload_stats():
+    """Get current daily upload statistics"""
+    user = check_api_auth()
+    if not user:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+
+    try:
+        upload_count = get_daily_upload_count(user.id)
+
+        # Check if user has custom photo
+        form = Form.query.filter_by(user_id=user.id, active=True).first()
+        has_custom_photo = False
+        if form and form.photo_path:
+            has_custom_photo = not form.photo_path.startswith(('male_iut', 'female_iut', 'default_male', 'default_female'))
+
+        return jsonify({
+            'success': True,
+            'uploads_today': upload_count,
+            'uploads_remaining': max(0, 3 - upload_count),
+            'limit_reached': upload_count >= 3,
+            'has_custom_photo': has_custom_photo
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500

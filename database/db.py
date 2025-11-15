@@ -70,7 +70,7 @@ class Form(db.Model):
         Index('idx_faculty', 'faculty'),  # Fast filtering by faculty
         Index('idx_level', 'level'),  # Fast filtering by level
         Index('idx_sex', 'sex'),  # Fast filtering by gender
-        Index('idx_created_at', 'created_at'),  # Fast sorting by date
+        Index('idx_voice_posts_created_at', 'created_at'),  # Fast sorting by date
         # Security: One active form per user
         CheckConstraint('length(name) >= 2', name='check_name_length'),
         CheckConstraint('length(surname) >= 2', name='check_surname_length'),
@@ -110,9 +110,17 @@ class VoicePost(db.Model):
     faculty_group = db.Column(db.String(20), nullable=False)
     text = db.Column(db.String(100), nullable=False)
     likes_count = db.Column(db.Integer, default=0, nullable=False)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
-    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
-
+    created_at = db.Column(
+        db.DateTime(timezone=True), 
+        server_default=db.func.now(),
+        nullable=False
+    )
+    updated_at = db.Column(
+        db.DateTime(timezone=True), 
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False
+    )	
     # Relationships
     user = db.relationship('User', backref='voice_posts')
     likes = db.relationship('VoiceLike', backref='post', cascade='all, delete-orphan')
@@ -126,7 +134,7 @@ class VoicePost(db.Model):
         # Fast sorting by likes within faculty
         Index('idx_faculty_likes', 'faculty_group', 'likes_count'),
         # Fast sorting by date
-        Index('idx_created_at', 'created_at'),
+        Index('idx_voice_post_created_at', 'created_at'),
         # Security: Ensure text is not empty
         CheckConstraint('length(text) >= 1', name='check_text_not_empty'),
     )
@@ -186,7 +194,7 @@ class Notification(db.Model):
         # Fast filtering by type
         Index('idx_notification_type', 'type'),
         # Fast sorting by date
-        Index('idx_created_at', 'created_at'),
+        Index('idx_notifications_created_at', 'created_at'),
     )
 
     def __repr__(self):
@@ -354,8 +362,6 @@ def create_indexes_if_not_exist():
         table_name = table.__tablename__
         existing_indexes = [idx['name'] for idx in inspector.get_indexes(table_name)]
 
-        print(f"\n📊 Table: {table_name}")
-        print(f"   Existing indexes: {len(existing_indexes)}")
 
         if hasattr(table, '__table_args__'):
             for item in table.__table_args__:

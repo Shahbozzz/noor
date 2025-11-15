@@ -11,12 +11,24 @@ REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
 REDIS_DB = int(os.getenv('REDIS_DB', 0))
 
-# Create Redis connection
+# ==========================================
+# TWO SEPARATE REDIS CLIENTS
+# ==========================================
+
+# 1. For Flask-Session (needs bytes/pickle format)
+redis_client_session = redis.Redis(
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    db=REDIS_DB,
+    decode_responses=False  # ← ВАЖНО: False для Flask-Session!
+)
+
+# 2. For caching, rate limiting, etc (needs UTF-8 strings)
 redis_client = redis.Redis(
     host=REDIS_HOST,
     port=REDIS_PORT,
     db=REDIS_DB,
-    decode_responses=True
+    decode_responses=True  # ← True для строк!
 )
 
 
@@ -30,7 +42,7 @@ def test_redis_connection():
 
 
 # ==========================================
-# REGISTRATION TOKEN FUNCTIONS (существующие)
+# REGISTRATION TOKEN FUNCTIONS
 # ==========================================
 
 def store_pending_user(token, email, hashed_password, expiry_minutes=15):
@@ -79,7 +91,7 @@ def delete_pending_user(token):
 
 
 # ==========================================
-# RATE LIMITING FUNCTIONS (существующие)
+# RATE LIMITING FUNCTIONS
 # ==========================================
 
 def store_rate_limit(identifier, max_attempts, lock_minutes):
@@ -133,7 +145,7 @@ def reset_rate_limit(identifier):
 
 
 # ==========================================
-# ✅ НОВЫЕ ФУНКЦИИ ДЛЯ КЕШИРОВАНИЯ
+# CACHING FUNCTIONS
 # ==========================================
 
 def cache_user_profile(user_id, profile_data, ttl_minutes=5):
@@ -294,86 +306,6 @@ def get_online_friends(friend_ids):
         return []
 
 
-# ==========================================
-# ✅ НОВЫЕ ФУНКЦИИ ДЛЯ КЕШИРОВАНИЯ
-# ==========================================
-
-def cache_user_profile(user_id, profile_data, ttl_minutes=5):
-    """
-    Cache user profile data in Redis
-
-    Args:
-        user_id (int): User ID
-        profile_data (dict): Profile data to cache
-        ttl_minutes (int): Time to live in minutes
-    """
-    try:
-        key = f"cache:student:{user_id}"
-        redis_client.setex(
-            key,
-            timedelta(minutes=ttl_minutes),
-            json.dumps(profile_data)
-        )
-        return True
-    except Exception as e:
-        print(f"Redis cache error: {e}")
-        return False
-
-
-def get_cached_user_profile(user_id):
-    """Get cached user profile"""
-    try:
-        key = f"cache:student:{user_id}"
-        data = redis_client.get(key)
-
-        if data:
-            return json.loads(data)
-        return None
-    except Exception as e:
-        print(f"Redis get cache error: {e}")
-        return None
-
-
-def invalidate_user_cache(user_id):
-    """Invalidate (delete) user cache after profile update"""
-    try:
-        key = f"cache:student:{user_id}"
-        redis_client.delete(key)
-        return True
-    except Exception as e:
-        print(f"Redis invalidate error: {e}")
-        return False
-
-
-def set_user_online(user_id, ttl_minutes=5):
-    """
-    Mark user as online
-
-    Args:
-        user_id (int): User ID
-        ttl_minutes (int): How long to keep online status
-    """
-    try:
-        from datetime import datetime
-        key = f"online:{user_id}"
-        redis_client.setex(
-            key,
-            timedelta(minutes=ttl_minutes),
-            datetime.now().isoformat()
-        )
-        return True
-    except Exception as e:
-        print(f"Redis online error: {e}")
-        return False
-
-
-def is_user_online(user_id):
-    """Check if user is online"""
-    try:
-        key = f"online:{user_id}"
-        return redis_client.exists(key) > 0
-    except Exception as e:
-        return False
 # Test connection on import
 if not test_redis_connection():
     print("⚠️  WARNING: Redis is not connected! Using fallback in-memory storage.")

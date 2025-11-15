@@ -630,19 +630,34 @@
         window.location.href = `/profile/${userId}`;
     }
 
-    function formatTimeAgo(date) {
-        const seconds = Math.floor((new Date() - date) / 1000);
+    function formatTimeAgo(dateString) {
+	    // Parse the ISO string correctly as UTC
+	const postDate = new Date(dateString);
+	const now = new Date();
+	    
+	    // Calculate difference in seconds
+	const seconds = Math.floor((now - postDate) / 1000);
 
-        if (seconds < 60) return 'just now';
-        const minutes = Math.floor(seconds / 60);
-        if (minutes < 60) return `${minutes}m ago`;
-        const hours = Math.floor(minutes / 60);
-        if (hours < 24) return `${hours}h ago`;
-        const days = Math.floor(hours / 24);
-        if (days < 7) return `${days}d ago`;
-        return date.toLocaleDateString();
+	    // Debugging (remove after testing)
+	console.log('Post date:', postDate.toISOString());
+	console.log('Current time:', now.toISOString());
+	console.log('Seconds ago:', seconds);
+
+	if (seconds < 0) return 'just now'; // Handle future dates
+	if (seconds < 60) return 'just now';
+	    
+	const minutes = Math.floor(seconds / 60);
+	if (minutes < 60) return `${minutes}m ago`;
+	    
+	const hours = Math.floor(minutes / 60);
+	if (hours < 24) return `${hours}h ago`;
+	    
+	const days = Math.floor(hours / 24);
+	if (days < 7) return `${days}d ago`;
+	    
+	    // For older posts, show the actual date
+	return postDate.toLocaleDateString(); 
     }
-
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;

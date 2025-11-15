@@ -1,13 +1,12 @@
 Flask
 Flask-SQLAlchemy
+Flask-WTF
+Flask-Limiter
+Flask-Session
 python-dotenv
 bcrypt
 psycopg2-binary
-Flask-WTF
-Flask-Limiter
-dotenv
 redis
-Pill
+Pillow
 bleach
-Flask-Session
 gunicorn

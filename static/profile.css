@@ -865,3 +865,166 @@ body > .wrapper {
         height: 22px;
     }
 }
+/* ===================================
+   PHOTO ACTION MENU - ADD TO profile.css
+   =================================== */
+
+.photo-action-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.photo-action-menu.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.photo-action-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.photo-action-content {
+    position: relative;
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 280px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: photoMenuSlideIn 0.3s ease;
+    transform-origin: center;
+}
+
+@keyframes photoMenuSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.photo-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    text-align: left;
+}
+
+.photo-action-btn:hover:not(:disabled) {
+    background: #f8f9fa;
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.photo-action-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.photo-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.photo-action-btn .btn-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.photo-action-btn .btn-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.photo-action-btn .btn-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+}
+
+.photo-action-btn .btn-sub {
+    font-size: 12px;
+    color: #666;
+}
+
+.photo-action-btn.upload-btn {
+    border-color: var(--primary);
+}
+
+.photo-action-btn.upload-btn:hover:not(:disabled) {
+    background: var(--primary);
+}
+
+.photo-action-btn.upload-btn:hover:not(:disabled) .btn-text,
+.photo-action-btn.upload-btn:hover:not(:disabled) .btn-sub {
+    color: white;
+}
+
+.photo-action-btn.delete-btn {
+    border-color: #dc3545;
+}
+
+.photo-action-btn.delete-btn .btn-text {
+    color: #dc3545;
+}
+
+.photo-action-btn.delete-btn:hover:not(:disabled) {
+    background: #dc3545;
+}
+
+.photo-action-btn.delete-btn:hover:not(:disabled) .btn-text,
+.photo-action-btn.delete-btn:hover:not(:disabled) .btn-sub {
+    color: white;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .photo-action-content {
+        min-width: auto;
+        width: calc(100% - 32px);
+        max-width: 320px;
+    }
+
+    .photo-action-btn {
+        padding: 12px 16px;
+    }
+
+    .photo-action-btn .btn-icon {
+        font-size: 22px;
+    }
+
+    .photo-action-btn .btn-text {
+        font-size: 14px;
+    }
+
+    .photo-action-btn .btn-sub {
+        font-size: 11px;
+    }
+}

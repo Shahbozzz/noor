@@ -12,8 +12,7 @@ ENV/
 # Logs
 *.log
 app.log
-# Uploads (не загружать фото студентов в Git!)
-uploads/*
+# Uploads (не загружать фото студентов в Git!)uploads/*
 !uploads/.gitkeep
 
 # IDE
@@ -22,6 +21,7 @@ uploads/*
 *.swp
 *.swo
 .DS_Store
+
 
 # Database
 *.db

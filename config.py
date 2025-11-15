@@ -7,6 +7,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# ✅ ВАЖНО: Импортируем правильный Redis client для sessions (БЕЗ decode_responses)
+from utils.redis_client import redis_client_session
+
 
 class Config:
     """Base configuration"""
@@ -21,8 +24,9 @@ class Config:
     SQLALCHEMY_MAX_OVERFLOW = 20
     SQLALCHEMY_POOL_RECYCLE = 3600
 
-    # ✅ Flask-Session Configuration (НОВОЕ!)
+    # ✅ Flask-Session Configuration (используем redis_client_session!)
     SESSION_TYPE = 'redis'
+    SESSION_REDIS = redis_client_session  # ← КЛЮЧЕВОЕ ИЗМЕНЕНИЕ!
     SESSION_PERMANENT = True
     SESSION_USE_SIGNER = True
     SESSION_KEY_PREFIX = 'inha_session:'

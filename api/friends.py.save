@@ -129,62 +129,31 @@ def accept_friend_request(request_id):
     user = check_api_auth()
     if not user:
         return jsonify({'success': False, 'error': 'Unauthorized'}), 401
-    
+
     try:
-        # Найти запрос на дружбу
         friend_request = FriendRequest.query.filter_by(
             id=request_id,
             to_user_id=user.id
         ).filter(
             FriendRequest.status.in_(['pending', 'accepted'])
         ).first()
-        
+
         if not friend_request:
             return jsonify({'success': False, 'error': 'Request not found'}), 404
-        
+
         from_user_id = friend_request.from_user_id
-        
-        # ✅ ИСПРАВЛЕНИЕ: Проверка дружбы ПЕРЕД созданием
+
         if Friendship.are_friends(user.id, from_user_id):
-            # Дружба уже существует - просто обновить статус запроса
-            if friend_request.status == 'pending':
-                friend_request.status = 'accepted'
-                db.session.commit()
             return jsonify({'success': True, 'message': 'Already friends'})
-        
-        # ✅ ИСПРАВЛЕНИЕ: Дополнительная проверка на уровне БД (на случай race condition)
-        existing_friendship = Friendship.query.filter(
-            db.or_(
-                db.and_(
-                    Friendship.user1_id == min(user.id, from_user_id),
-                    Friendship.user2_id == max(user.id, from_user_id)
-                ),
-                db.and_(
-                    Friendship.user1_id == max(user.id, from_user_id),
-                    Friendship.user2_id == min(user.id, from_user_id)
-                )
-            )
-        ).first()
-        
-        if existing_friendship:
-            # Дружба уже есть в БД - обновить статус запроса
-            if friend_request.status == 'pending':
-                friend_request.status = 'accepted'
-                db.session.commit()
-            return jsonify({'success': True, 'message': 'Already friends'})
-        
-        # Создать дружбу
+
         friendship = Friendship.create_friendship(user.id, from_user_id)
         db.session.add(friendship)
-        
-        # Обновить статус запроса
+
         if friend_request.status == 'pending':
             friend_request.status = 'accepted'
-        
-        # ✅ ИСПРАВЛЕНИЕ: Коммит ОДИН РАЗ для обоих объектов
+
         db.session.commit()
-        
-        # Создать уведомление (в отдельном try-catch чтобы не сломать основную логику)
+
         try:
             recipient_form = Form.query.filter_by(user_id=user.id, active=True).first()
             if recipient_form:
@@ -199,16 +168,16 @@ def accept_friend_request(request_id):
                 db.session.commit()
         except Exception as notif_error:
             print(f"Warning: Could not create notification: {notif_error}")
-            # Уведомление не критично - продолжаем
-        
+
         return jsonify({'success': True, 'message': 'Friend request accepted'})
-        
+
     except Exception as e:
         db.session.rollback()
         print(f"Error accepting friend request: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
 
 # ----------------------------
 # Decline Friend Request
