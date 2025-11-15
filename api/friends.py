@@ -1,5 +1,5 @@
 """
-API endpoints for Friend System - FIXED DUPLICATE BUG
+API endpoints for Friend System 
 """
 from flask import Blueprint, jsonify, request, session
 from sqlalchemy import or_, and_
@@ -10,13 +10,13 @@ friends_api = Blueprint('friends_api', __name__, url_prefix='/api/friends')
 
 
 # ----------------------------
-# Send Friend Request (FIXED!)
+# Send Friend Request 
 # ----------------------------
 @friends_api.route('/request', methods=['POST'])
 def send_friend_request():
     """Send friend request - with proper duplicate checking"""
     from main import limiter
-    @limiter.limit("20 per minute")  # ⭐ Increased from 10 to 20
+    @limiter.limit("20 per minute")  
     def _inner():
         user = check_api_auth()
         if not user:
@@ -32,11 +32,11 @@ def send_friend_request():
             return jsonify({'success': False, 'error': 'Cannot add yourself'}), 400
 
         try:
-            # ⭐ CHECK 1: Already friends?
+            
             if Friendship.are_friends(user.id, to_user_id):
                 return jsonify({'success': False, 'error': 'Already friends'}), 400
 
-            # ⭐ CHECK 2: Pending request exists?
+            
             existing_pending = FriendRequest.query.filter(
                 or_(
                     and_(FriendRequest.from_user_id == user.id, FriendRequest.to_user_id == to_user_id),
@@ -46,7 +46,7 @@ def send_friend_request():
             ).first()
 
             if existing_pending:
-                # Pending request exists - check direction
+            
                 if existing_pending.from_user_id == to_user_id:
                     # They sent you a request - tell user to accept it
                     return jsonify({
@@ -64,7 +64,6 @@ def send_friend_request():
                         'error': 'Friend request already sent'
                     }), 400
 
-            # ⭐ CRITICAL FIX: Delete any old declined/rejected requests
             # This allows users to send new requests after being declined
             old_declined = FriendRequest.query.filter(
                 and_(FriendRequest.from_user_id == user.id, FriendRequest.to_user_id == to_user_id),
@@ -87,7 +86,7 @@ def send_friend_request():
             db.session.add(friend_request)
             db.session.flush()
 
-            # Create notification (optional - won't break if fails)
+            # Create notification 
             sender_form = Form.query.filter_by(user_id=user.id, active=True).first()
             if sender_form:
                 try:
@@ -131,7 +130,7 @@ def accept_friend_request(request_id):
         return jsonify({'success': False, 'error': 'Unauthorized'}), 401
     
     try:
-        # Найти запрос на дружбу
+        
         friend_request = FriendRequest.query.filter_by(
             id=request_id,
             to_user_id=user.id
@@ -144,7 +143,6 @@ def accept_friend_request(request_id):
         
         from_user_id = friend_request.from_user_id
         
-        # ✅ ИСПРАВЛЕНИЕ: Проверка дружбы ПЕРЕД созданием
         if Friendship.are_friends(user.id, from_user_id):
             # Дружба уже существует - просто обновить статус запроса
             if friend_request.status == 'pending':
@@ -152,7 +150,6 @@ def accept_friend_request(request_id):
                 db.session.commit()
             return jsonify({'success': True, 'message': 'Already friends'})
         
-        # ✅ ИСПРАВЛЕНИЕ: Дополнительная проверка на уровне БД (на случай race condition)
         existing_friendship = Friendship.query.filter(
             db.or_(
                 db.and_(
@@ -167,24 +164,19 @@ def accept_friend_request(request_id):
         ).first()
         
         if existing_friendship:
-            # Дружба уже есть в БД - обновить статус запроса
             if friend_request.status == 'pending':
                 friend_request.status = 'accepted'
                 db.session.commit()
             return jsonify({'success': True, 'message': 'Already friends'})
         
-        # Создать дружбу
         friendship = Friendship.create_friendship(user.id, from_user_id)
         db.session.add(friendship)
         
-        # Обновить статус запроса
         if friend_request.status == 'pending':
             friend_request.status = 'accepted'
         
-        # ✅ ИСПРАВЛЕНИЕ: Коммит ОДИН РАЗ для обоих объектов
         db.session.commit()
         
-        # Создать уведомление (в отдельном try-catch чтобы не сломать основную логику)
         try:
             recipient_form = Form.query.filter_by(user_id=user.id, active=True).first()
             if recipient_form:
@@ -199,7 +191,6 @@ def accept_friend_request(request_id):
                 db.session.commit()
         except Exception as notif_error:
             print(f"Warning: Could not create notification: {notif_error}")
-            # Уведомление не критично - продолжаем
         
         return jsonify({'success': True, 'message': 'Friend request accepted'})
         

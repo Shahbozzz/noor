@@ -14,7 +14,7 @@ from utils.security import (
     MAX_LOGIN_ATTEMPTS, LOCK_MINUTES_LOGIN, TOKEN_EXPIRY_MINUTES
 )
 from utils.email_utils import send_verification_email
-from utils.redis_client import set_user_online  # ✅ НОВОЕ!
+from utils.redis_client import set_user_online  # 
 auth_bp = Blueprint('auth', __name__)
 
 
@@ -82,12 +82,11 @@ def verify_login():
 
     reset_attempts('login_attempts')
 
-    # ✅ Данные теперь автоматически идут в Redis, не в cookies!
+    
     session.permanent = True
     session["user_id"] = user.id
     session["user_email"] = user.email
 
-    # ✅ НОВОЕ: Отметить пользователя как online
     set_user_online(user.id)
 
     logging.info(f"Successful login for user {user.id}")
@@ -197,12 +196,10 @@ def confirm(token):
         db.session.add(new_user)
         db.session.commit()
 
-        # ✅ Данные автоматически в Redis!
         session.permanent = True
         session["user_id"] = new_user.id
         session["user_email"] = new_user.email
 
-        # ✅ НОВОЕ: Отметить как online
         set_user_online(new_user.id)
 
         remove_pending_user(token)
@@ -232,13 +229,12 @@ def logout():
     """Log out user"""
     user_id = session.get("user_id")
 
-    # ✅ НОВОЕ: Удалить кеш пользователя при logout
     if user_id:
         from utils.redis_client import invalidate_user_cache
         invalidate_user_cache(user_id)
         logging.info(f"User {user_id} logged out")
 
-    session.clear()  # ✅ Теперь очищает Redis session, не cookies!
+    session.clear()  
 
     flash("✅ Logged out successfully!", "success")
     return redirect(url_for('auth.login'))

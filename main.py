@@ -22,17 +22,17 @@ from api.students import students_api
 from api.friends import friends_api
 from api.profile_edit import profile_edit_api
 
-# ✅ Import Redis clients (session = bytes, cache = strings)
+# Import Redis clients (session = bytes, cache = strings)
 from utils.redis_client import redis_client_session, redis_client
 
 # --- Initialize Flask app ---
 app = Flask(__name__)
 app.config.from_object(get_config())
 
-# ✅ Flask-Session uses redis_client_session (decode_responses=False for pickle)
+# Flask-Session uses redis_client_session (decode_responses=False for pickle)
 app.config['SESSION_REDIS'] = redis_client_session
 
-# ✅ Initialize Flask-Session
+#  Initialize Flask-Session
 Session(app)
 
 # --- CSRF Protection ---
@@ -53,7 +53,6 @@ def log_request():
 # --- Initialize Database ---
 db.init_app(app)
 
-# ... остальное без изменений
 # Initialize limiter
 limiter = Limiter(
     app=app,
@@ -75,7 +74,6 @@ with app.app_context():
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
-# ✅ ПЕРЕПИСАНО: Context Processor с Redis кешированием
 @app.context_processor
 def inject_user():
     """
@@ -87,16 +85,13 @@ def inject_user():
 
     user_id = session.get("user_id")
 
-    # ✅ Попробовать загрузить из Redis кеша
     cache_key = f"user_cache:{user_id}"
     cached_data = redis_client.get(cache_key)
 
     if cached_data:
-        # Кеш найден - вернуть без запроса к БД!
         user_data = json.loads(cached_data)
         return dict(current_user=type('obj', (object,), user_data))
 
-    # Кеша нет - загрузить из БД и закешировать
     user = User.query.get(user_id)
     if user:
         form = Form.query.filter_by(user_id=user.id, active=True).first()
@@ -118,7 +113,6 @@ def inject_user():
     return dict(current_user=None)
 
 
-# ✅ ОБНОВЛЕНО: Refresh cache теперь использует Redis
 def refresh_user_cache(user_id=None):
     """
     Helper function to refresh user cache after profile updates

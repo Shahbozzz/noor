@@ -16,9 +16,6 @@ def get_students():
     """
     Get paginated and filtered students
     Requires authentication
-
-    ⭐ NO RATE LIMIT - This endpoint loads many images, rate limiting causes issues
-
     Query params:
     - page: int (default 1)
     - per_page: int (default 30)
@@ -38,10 +35,10 @@ def get_students():
         faculty = request.args.get('faculty', '')
         level = request.args.get('level', '')
 
-        # ⭐ Limit max items to prevent overload
+        # Limit max items to prevent overload
         per_page = min(per_page, 100)
 
-        # ⭐ Exclude current user
+        # Exclude current user
         query = Form.query.filter(
             Form.active == True,
             Form.user_id != user.id
@@ -53,7 +50,7 @@ def get_students():
         if level and level != 'all':
             query = query.filter(Form.level == level)
 
-        # ⭐ Random order with daily seed (stable randomness throughout the day)
+        #  Random order with daily seed (stable randomness throughout the day)
         today = date.today()
         seed = (user.id + today.year * 10000 + today.month * 100 + today.day) % 1000000 / 1000000.0
 
@@ -82,7 +79,7 @@ def get_students():
                 'hobbies': student.hobbies,
                 'favorite_subjects': student.favorite_subjects,
                 'relationship': student.relationship,
-                'sex': student.sex,  # ⭐ ДОБАВЛЕНО для gender-based colors
+                'sex': student.sex, 
                 'photo_path': student.photo_path,
                 'photo_thumb_path': student.photo_thumb_path
             })
@@ -115,7 +112,7 @@ def search_students():
     """
     Search students by name or surname
 
-    ⭐ NO RATE LIMIT - Search is a core feature, should not be limited
+     NO RATE LIMIT - Search is a core feature, should not be limited
     """
     user = check_api_auth()
     if not user:
@@ -139,7 +136,7 @@ def search_students():
             Form.surname.ilike(f'%{query}%')
         )
 
-        # ⭐ Exclude current user from search
+        # Exclude current user from search
         results = Form.query.filter(
             Form.active == True,
             Form.user_id != user.id,
@@ -157,7 +154,7 @@ def search_students():
                 'hobbies': student.hobbies,
                 'favorite_subjects': student.favorite_subjects,
                 'relationship': student.relationship,
-                'sex': student.sex,  # ⭐ ДОБАВЛЕНО для gender-based colors
+                'sex': student.sex,  # ДОБАВЛЕНО для gender-based colors
                 'photo_path': student.photo_path,
                 'photo_thumb_path': student.photo_thumb_path
             })

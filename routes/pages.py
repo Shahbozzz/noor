@@ -43,9 +43,7 @@ def home():
     if not existing_form:
         return render_template("form.html")
 
-    # ⭐ ИЗМЕНЕНО: Исключаем себя и делаем рандомный порядок
-
-    # Seed для рандома (постоянный в течение дня)
+   
     today = date.today()
     seed = (user.id + today.year * 10000 + today.month * 100 + today.day) % 1000000 / 1000000.0
 
@@ -96,7 +94,7 @@ def notifications():
         flash("⚠️ Please log in first or register.", "error")
         return redirect(url_for('auth.login'))
 
-    return render_template('notifications.html')  # ← было home.html
+    return render_template('notifications.html')  
 
 
 @pages_bp.route('/profile/<int:user_id>')

@@ -500,7 +500,7 @@ def update_photo():
             thumb.thumbnail((150, 150), Image.Resampling.LANCZOS)
             thumb.save(thumb_filepath, 'WEBP', quality=80, optimize=True)
 
-            # ✅ Delete old photos (only if not default photos)
+            #  Delete old photos (only if not default photos)
             if form.photo_path and form.photo_path != 'male_iut.png' and form.photo_path != 'female_iut.png':
                 old_filepath = os.path.join(upload_folder, form.photo_path)
                 if os.path.exists(old_filepath):
@@ -523,7 +523,7 @@ def update_photo():
             db.session.commit()
             clear_user_cache()
 
-            # ✅ Increment daily upload count
+            # Increment daily upload count
             new_count = increment_daily_upload_count(user.id)
 
             return jsonify({
@@ -562,7 +562,7 @@ def delete_photo():
             if not form:
                 return jsonify({'success': False, 'error': 'Profile not found'}), 404
 
-            # ✅ Check if user has a custom photo (not default)
+            #  Check if user has a custom photo (not default)
             has_custom_photo = False
             if form.photo_path:
                 has_custom_photo = not form.photo_path.startswith(('male_iut', 'female_iut', 'default_male', 'default_female'))
@@ -575,7 +575,7 @@ def delete_photo():
 
             upload_folder = get_upload_folder()
 
-            # ✅ Delete physical files
+            #  Delete physical files
             if form.photo_path:
                 photo_filepath = os.path.join(upload_folder, form.photo_path)
                 if os.path.exists(photo_filepath):
@@ -592,7 +592,7 @@ def delete_photo():
                     except Exception as e:
                         print(f"Error deleting thumbnail: {e}")
 
-            # ✅ Revert to default WebP photos based on gender
+            # Revert to default WebP photos based on gender
             if form.sex.lower() == 'male':
                 form.photo_path = 'default_male.webp'
                 form.photo_thumb_path = 'default_male_thumb.webp'

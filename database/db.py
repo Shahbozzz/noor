@@ -1,7 +1,5 @@
 """
-Updated Database Models - Secure & Optimized
-Performance: Added indexes for faster queries
-Security: Constraints and validations
+Database Models
 """
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Index, CheckConstraint

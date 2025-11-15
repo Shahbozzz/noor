@@ -23,7 +23,7 @@ redis_client_session = redis.Redis(
     decode_responses=False  # ← ВАЖНО: False для Flask-Session!
 )
 
-# 2. For caching, rate limiting, etc (needs UTF-8 strings)
+# 2. For caching, rate limiting, etc 
 redis_client = redis.Redis(
     host=REDIS_HOST,
     port=REDIS_PORT,
